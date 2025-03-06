@@ -32,7 +32,7 @@ jobs:
       - name: Lint Go
         uses: golangci/golangci-lint-action@051d91933864810ecd5e2ea2cfd98f6a5bca5347 # v6.3.2
         with:
-          version: v1.63.4 # renovate: datasource=github-tags depName=golangci/golangci-lint
+          version: v1.64.6 # renovate: datasource=github-tags depName=golangci/golangci-lint
 
   actionlint:
     name: Actionlint
