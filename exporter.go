@@ -223,6 +223,9 @@ func main() {
 func registerCollector(logger *slog.Logger, transport *http.Transport,
 	addr string, labels map[string]string,
 ) {
+	// Register system metrics collector
+	sysCollector := collector.NewSystemCollector()
+	prometheus.MustRegister(sysCollector)
 	if strings.HasPrefix(addr, "unix:") {
 		socketPath, requestPath, err := parseUnixSocketAddress(addr)
 		if err != nil {
