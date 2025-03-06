@@ -98,6 +98,10 @@ var (
 const exporterName = "nginx_exporter"
 
 func main() {
+	// Initialize system metrics monitoring
+	m := collector.NewMetricsMonitor()
+	m.Start()
+
 	kingpin.Flag("prometheus.const-label", "Label that will be used in every metric. Format is label=value. It can be repeated multiple times.").Envar("CONST_LABELS").StringMapVar(&constLabels)
 
 	// convert deprecated flags to new format
