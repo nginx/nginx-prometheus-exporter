@@ -2,7 +2,7 @@ module github.com/nginx/nginx-prometheus-exporter
 
 go 1.23.0
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
