@@ -21,7 +21,7 @@ build-goreleaser: ## Build all binaries using GoReleaser
 
 .PHONY: lint
 lint: ## Run linter
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run --fix
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run --fix
 
 .PHONY: test
 test: ## Run tests
