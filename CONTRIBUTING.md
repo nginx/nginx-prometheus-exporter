@@ -26,9 +26,7 @@ are considering contributing!
 
 ## Ask a Question
 
-To ask a question please use [Github Discussions](https://github.com/nginx/nginx-prometheus-exporter/discussions).
-
-You can also join our [Community Slack](https://community.nginx.org/joinslack) which has a wider NGINX audience.
+To ask a question, please use [GitHub Discussions](https://github.com/nginx/nginx-prometheus-exporter/discussions).
 
 Please reserve GitHub issues for feature requests and bugs rather than general questions.
 
