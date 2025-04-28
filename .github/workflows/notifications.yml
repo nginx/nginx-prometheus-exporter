@@ -49,7 +49,7 @@ jobs:
           status: custom
           custom_payload: |
             {
-              username: 'Github',
+              username: 'GitHub',
               icon_emoji: ':github:',
               mention: 'channel',
               attachments: [{
