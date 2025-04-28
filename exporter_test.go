@@ -130,7 +130,7 @@ func TestAddMissingEnvironmentFlags(t *testing.T) {
 	// instead of checking the envar of each matching flag name
 	for k, v := range expectedMatches {
 		matched := false
-		for _, f := range kingpin.CommandLine.Model().FlagGroupModel.Flags {
+		for _, f := range kingpin.CommandLine.Model().Flags {
 			if f.Name == k && f.Envar == v {
 				matched = true
 			}

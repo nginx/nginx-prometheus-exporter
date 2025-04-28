@@ -292,7 +292,7 @@ func cloneRequest(req *http.Request) *http.Request {
 // addMissingEnvironmentFlags sets Envar on any flag which has
 // the "web." prefix which doesn't already have an Envar set.
 func addMissingEnvironmentFlags(ka *kingpin.Application) {
-	for _, f := range ka.Model().FlagGroupModel.Flags {
+	for _, f := range ka.Model().Flags {
 		if strings.HasPrefix(f.Name, "web.") && f.Envar == "" {
 			retrievedFlag := ka.GetFlag(f.Name)
 			if retrievedFlag != nil {
