@@ -1371,7 +1371,7 @@ Flags:
 | `nginxplus_upstream_server_active`                  | Gauge   | Active connections                                                                                                                                             | `server`, `upstream`                                                                                                                              |
 | `nginxplus_upstream_server_limit`                   | Gauge   | Limit for connections which corresponds to the max_conns parameter of the upstream server. Zero value means there is no limit                                  | `server`, `upstream`                                                                                                                              |
 | `nginxplus_upstream_server_requests`                | Counter | Total client requests                                                                                                                                          | `server`, `upstream`                                                                                                                              |
-| `nginxplus_upstream_server_responses`               | Counter | Total responses sent to clients                                                                                                                                | `code` (the response status code. 
+| `nginxplus_upstream_server_responses`               | Counter | Total responses sent to clients                                                                                                                                | `code` (the response status code.
 
 -- Chunk 3 --
 // /app/repos/repo_9/README.md:301-450

@@ -7,6 +7,7 @@
 This security audit report provides a comprehensive analysis of the NGINX Prometheus Exporter repository, identifying potential vulnerabilities, code quality issues, and recommendations for improvement.
 
 ## Table of Contents
+
 - [Security Vulnerabilities](#security-vulnerabilities)
 - [Performance Considerations](#performance-considerations)
 - [Code Quality](#code-quality)
@@ -16,6 +17,7 @@ This security audit report provides a comprehensive analysis of the NGINX Promet
 ## Security Vulnerabilities
 
 ### 1. TLS Configuration Risk
+
 _File: examples/tls/web-config.yml_
 
 ```yaml
@@ -27,27 +29,32 @@ tls_server_config:
 **Issue**: Potential insecure TLS configuration with minimal validation
 
 **Risks**:
+
 - Lack of explicit cipher suite configuration
 - No clear TLS version constraints
 - Potential use of weak certificates
 
 **Suggested Fix**:
+
 - Implement strict TLS configuration
 - Enforce TLS 1.2 or 1.3
 - Use strong cipher suites
 - Implement certificate rotation mechanisms
 
 ### 2. HTTP Client Security
+
 _File: collector/nginx.go_
 
 **Issue**: Potential HTTP client configuration vulnerabilities
 
 **Risks**:
+
 - No explicit timeout configurations
 - Potential for connection leaks
 - Lack of connection pooling strategies
 
 **Suggested Fix**:
+
 - Implement default and configurable timeouts
 - Use context-based request cancellation
 - Configure connection pooling
@@ -56,9 +63,11 @@ _File: collector/nginx.go_
 ## Performance Considerations
 
 ### 1. Metric Collection Efficiency
+
 **Observation**: Potential performance bottlenecks in concurrent metric gathering
 
 **Recommendations**:
+
 - Implement robust goroutine management
 - Use context-based cancellation
 - Add request-level timeouts
@@ -67,12 +76,15 @@ _File: collector/nginx.go_
 ## Code Quality
 
 ### 1. Modular Design
+
 **Strengths**:
+
 - Clear separation of concerns
 - Distinct structs for NGINX clients and metric collectors
 - Flexible configuration options
 
 **Recommendations**:
+
 - Continue maintaining architectural boundaries
 - Add comprehensive interface documentation
 - Implement more extensive unit testing
@@ -80,11 +92,14 @@ _File: collector/nginx.go_
 ## Observability
 
 ### 1. Logging and Tracing
+
 **Current State**:
+
 - Basic logging mechanisms
 - Limited internal health metrics
 
 **Recommendations**:
+
 - Enhance error logging
 - Implement detailed tracing for metric collection
 - Add comprehensive health check endpoints
