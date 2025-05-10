@@ -1214,7 +1214,7 @@ Flags:
 
 | Name                                        | Type    | Description                                                             | Labels  |
 | ------------------------------------------- | ------- | ----------------------------------------------------------------------- | ------- |
-| `nginxplus_cache_size`                      | Gauge   | Total size of the cache                             
+| `nginxplus_cache_size`                      | Gauge   | Total size of the cache
 
 -- Chunk 4 --
 // /app/repos/repo_8/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/repos/repo_0/README.md:451-600
