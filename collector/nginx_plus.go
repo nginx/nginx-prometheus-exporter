@@ -35,6 +35,7 @@ type NginxPlusCollector struct {
 	logger                         *slog.Logger
 	cacheZoneMetrics               map[string]*prometheus.Desc
 	workerMetrics                  map[string]*prometheus.Desc
+	slabsMetrics                   map[string]*prometheus.Desc
 	nginxClient                    *plusclient.NginxClient
 	streamServerZoneMetrics        map[string]*prometheus.Desc
 	streamZoneSyncMetrics          map[string]*prometheus.Desc
@@ -563,6 +564,14 @@ func NewNginxPlusCollector(nginxClient *plusclient.NginxClient, namespace string
 			"http_requests_total":   newWorkerMetric(namespace, "http_requests_total", "The total number of client requests received by the worker process", constLabels),
 			"http_requests_current": newWorkerMetric(namespace, "http_requests_current", "The current number of client requests that are currently being processed by the worker process", constLabels),
 		},
+		slabsMetrics: map[string]*prometheus.Desc{
+			"pages_used":  newSlabPagesMetric(namespace, "pages_used", "Current number of used memory pages", constLabels),
+			"pages_free":  newSlabPagesMetric(namespace, "pages_free", "Current number of free memory pages", constLabels),
+			"slots_free":  newSlabMetric(namespace, "free", "Current number of free memory slots", constLabels),
+			"slots_used":  newSlabMetric(namespace, "used", "Current number of used memory slots", constLabels),
+			"slots_reqs":  newSlabMetric(namespace, "reqs", "Total number of attempts to allocate memory of specified size", constLabels),
+			"slots_fails": newSlabMetric(namespace, "fails", "Total number of unsuccessful attempts to allocate memory of specified size", constLabels),
+		},
 	}
 }
 
@@ -614,6 +623,9 @@ func (c *NginxPlusCollector) Describe(ch chan<- *prometheus.Desc) {
 		ch <- m
 	}
 	for _, m := range c.workerMetrics {
+		ch <- m
+	}
+	for _, m := range c.slabsMetrics {
 		ch <- m
 	}
 }
@@ -1246,6 +1258,18 @@ func (c *NginxPlusCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.workerMetrics["http_requests_total"], prometheus.CounterValue, float64(worker.HTTP.HTTPRequests.Total), workerID, workerPID)
 		ch <- prometheus.MustNewConstMetric(c.workerMetrics["http_requests_current"], prometheus.GaugeValue, float64(worker.HTTP.HTTPRequests.Current), workerID, workerPID)
 	}
+
+	for name, slab := range stats.Slabs {
+		ch <- prometheus.MustNewConstMetric(c.slabsMetrics["pages_used"], prometheus.GaugeValue, float64(slab.Pages.Used), name)
+		ch <- prometheus.MustNewConstMetric(c.slabsMetrics["pages_free"], prometheus.GaugeValue, float64(slab.Pages.Free), name)
+
+		for memory, slot := range slab.Slots {
+			ch <- prometheus.MustNewConstMetric(c.slabsMetrics["slots_free"], prometheus.GaugeValue, float64(slot.Free), name, memory)
+			ch <- prometheus.MustNewConstMetric(c.slabsMetrics["slots_used"], prometheus.GaugeValue, float64(slot.Used), name, memory)
+			ch <- prometheus.MustNewConstMetric(c.slabsMetrics["slots_reqs"], prometheus.GaugeValue, float64(slot.Reqs), name, memory)
+			ch <- prometheus.MustNewConstMetric(c.slabsMetrics["slots_fails"], prometheus.GaugeValue, float64(slot.Fails), name, memory)
+		}
+	}
 }
 
 var upstreamServerStates = map[string]float64{
@@ -1330,4 +1354,12 @@ func newCacheZoneMetric(namespace string, metricName string, docString string, v
 
 func newWorkerMetric(namespace string, metricName string, docString string, constLabels prometheus.Labels) *prometheus.Desc {
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "worker", metricName), docString, []string{"id", "pid"}, constLabels)
+}
+
+func newSlabPagesMetric(namespace string, metricName string, docString string, constLabels prometheus.Labels) *prometheus.Desc {
+	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "slab", metricName), docString, []string{"zone"}, constLabels)
+}
+
+func newSlabMetric(namespace string, metricName string, docString string, constLabels prometheus.Labels) *prometheus.Desc {
+	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "slab", metricName), docString, []string{"zone", "slot"}, constLabels)
 }
