@@ -49,6 +49,7 @@ NGINX Prometheus exporter makes it possible to monitor NGINX or NGINX Plus using
     - [Stream Connections Limiting](#stream-connections-limiting)
     - [Cache](#cache)
     - [Worker](#worker)
+  - [Slabs](#slabs)
 - [Troubleshooting](#troubleshooting)
 - [Releases](#releases)
   - [Docker images](#docker-images)
