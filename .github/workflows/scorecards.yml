@@ -34,7 +34,7 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          repo_token: ${{ secrets.SCORECARD_READ_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
 
           # Public repositories:
           #   - Publish results to OpenSSF REST API for easy access by consumers
