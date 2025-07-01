@@ -216,7 +216,7 @@ jobs:
           add-cpes-if-none: true
 
       - name: Upload scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@ff0a06e83cb2de871e5a09832bc6a81e7276941f # v3.28.18
+        uses: github/codeql-action/upload-sarif@181d5eefc20863364f96762470ba6f862bdef56b # v3.29.2
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
