@@ -4,8 +4,7 @@ This example shows how to run NGINX Prometheus Exporter with web configuration. 
 configuration `web-config.yml` that enables TLS and specifies the path to the TLS certificate and key files.
 Additionally, there are two example TLS files `server.crt` and `server.key` that are used in the configuration.
 
-The full documentation for the web configuration can be found
-[here](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md).
+See the full documentation of the [web configuration](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md) for more details.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
