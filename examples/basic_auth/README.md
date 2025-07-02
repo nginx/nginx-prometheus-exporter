@@ -4,7 +4,7 @@ This example shows how to run NGINX Prometheus Exporter with web configuration. 
 configuration `web-config.yml` that enables basic authentication. It is configured to have a single user `alice` with
 password `password`.
 
-See the full documentation of the 
+See the full documentation of the
 [web configuration](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md) for more details.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
