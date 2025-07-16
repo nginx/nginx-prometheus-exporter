@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Sample web application
+  app:
+    image: nginx:alpine
+    container_name: sample-app
+    volumes:
+      - ./docker/app/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/app/html:/usr/share/nginx/html
+    ports:
+      - "8080:80"
+    networks:
+      - nginx-monitoring
+    restart: unless-stopped
+
+  # NGINX with stub_status enabled
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-server
+    depends_on:
+      - app
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - "80:80"
+      - "8081:8081"  # stub_status port
+    networks:
+      - nginx-monitoring
+    restart: unless-stopped
+
+  # NGINX Prometheus Exporter
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx-prometheus-exporter
+    depends_on:
+      - nginx
+    command:
+      - --nginx.scrape-uri=http://nginx:8081/stub_status
+      - --web.listen-address=0.0.0.0:9113
+    ports:
+      - "9113:9113"
+    networks:
+      - nginx-monitoring
+    restart: unless-stopped
+
+networks:
+  nginx-monitoring:
+    driver: bridge

@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # NGINX Prometheus Exporter
+  - job_name: "nginx-exporter"
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+    scrape_interval: 5s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+
+  # Optional: Direct monitoring of services
+  - job_name: "nginx-status"
+    static_configs:
+      - targets: ["nginx:8081"]
+    metrics_path: /stub_status
+    scrape_interval: 10s
