@@ -1,0 +1,286 @@
+name: Docker Compose Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker-compose.yml'
+      - 'examples/docker-compose/**'
+      - '.github/workflows/test-docker-compose-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docker-compose.yml'
+      - 'examples/docker-compose/**'
+      - '.github/workflows/test-docker-compose-ci.yml'
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.ref_name }}-test-docker-compose-ci
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docker-compose-nginx-exporter:
+    name: Docker Compose - NGINX Exporter
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Validate Docker Compose configuration
+        run: |
+          echo "Validating Docker Compose configuration..."
+          docker-compose config --quiet
+          echo "✓ Docker Compose configuration is valid"
+
+      - name: Start NGINX Exporter with dependencies
+        run: |
+          echo "Starting NGINX Exporter and its dependencies..."
+          docker-compose up -d nginx-exporter
+          echo "✓ NGINX Exporter started successfully"
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to be ready..."
+          
+          # Wait for NGINX to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:8081/stub_status > /dev/null 2>&1; then
+              echo "✓ NGINX stub_status is ready"
+              break
+            fi
+            echo "Waiting for NGINX stub_status... (attempt $i/30)"
+            sleep 2
+          done
+          
+          # Wait for NGINX Exporter to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:9113/metrics > /dev/null 2>&1; then
+              echo "✓ NGINX Exporter metrics endpoint is ready"
+              break
+            fi
+            echo "Waiting for NGINX Exporter metrics... (attempt $i/30)"
+            sleep 2
+          done
+
+      - name: Verify container status
+        run: |
+          echo "Verifying container status..."
+          docker-compose ps
+          
+          # Check if nginx-exporter container is running
+          if ! docker-compose ps nginx-exporter | grep -q "Up"; then
+            echo "❌ NGINX Exporter container is not running"
+            docker-compose logs nginx-exporter
+            exit 1
+          fi
+          echo "✓ NGINX Exporter container is running"
+          
+          # Check if nginx container is running
+          if ! docker-compose ps nginx | grep -q "Up"; then
+            echo "❌ NGINX container is not running"
+            docker-compose logs nginx
+            exit 1
+          fi
+          echo "✓ NGINX container is running"
+
+      - name: Test NGINX stub_status endpoint
+        run: |
+          echo "Testing NGINX stub_status endpoint..."
+          response=$(curl -s http://localhost:8081/stub_status)
+          
+          if [[ -z "$response" ]]; then
+            echo "❌ NGINX stub_status endpoint returned empty response"
+            exit 1
+          fi
+          
+          # Check if response contains expected metrics
+          if echo "$response" | grep -q "Active connections:"; then
+            echo "✓ NGINX stub_status endpoint is working correctly"
+          else
+            echo "❌ NGINX stub_status endpoint response is invalid"
+            echo "Response: $response"
+            exit 1
+          fi
+
+      - name: Test NGINX Exporter metrics endpoint
+        run: |
+          echo "Testing NGINX Exporter metrics endpoint..."
+          response=$(curl -s http://localhost:9113/metrics)
+          
+          if [[ -z "$response" ]]; then
+            echo "❌ NGINX Exporter metrics endpoint returned empty response"
+            exit 1
+          fi
+          
+          # Check if response contains expected NGINX metrics
+          if echo "$response" | grep -q "nginx_connections_accepted"; then
+            echo "✓ NGINX Exporter metrics endpoint is working correctly"
+          else
+            echo "❌ NGINX Exporter metrics endpoint response is invalid"
+            echo "Response: $response"
+            exit 1
+          fi
+
+      - name: Verify metrics collection
+        run: |
+          echo "Verifying metrics collection..."
+          
+          # Generate some traffic to NGINX
+          echo "Generating traffic to NGINX..."
+          for i in {1..5}; do
+            curl -s http://localhost:80 > /dev/null || true
+            sleep 1
+          done
+          
+          # Wait a moment for metrics to be updated
+          sleep 3
+          
+          # Check if metrics are being collected
+          metrics=$(curl -s http://localhost:9113/metrics)
+          
+          # Verify nginx_up metric exists and is 1
+          if echo "$metrics" | grep -q "nginx_up 1"; then
+            echo "✓ NGINX Exporter is successfully collecting metrics"
+          else
+            echo "❌ NGINX Exporter is not collecting metrics correctly"
+            echo "nginx_up metric:"
+            echo "$metrics" | grep "nginx_up" || echo "nginx_up metric not found"
+            exit 1
+          fi
+          
+          # Verify connection metrics exist
+          if echo "$metrics" | grep -q "nginx_connections_accepted"; then
+            echo "✓ Connection metrics are being collected"
+          else
+            echo "❌ Connection metrics are not being collected"
+            exit 1
+          fi
+
+      - name: Test service connectivity
+        run: |
+          echo "Testing service connectivity..."
+          
+          # Test that services can communicate internally
+          docker exec nginx-prometheus-exporter curl -f http://nginx:8081/stub_status > /dev/null
+          echo "✓ Services can communicate internally"
+
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          echo "=== NGINX Exporter Logs ==="
+          docker-compose logs nginx-exporter
+          echo "=== NGINX Logs ==="
+          docker-compose logs nginx
+          echo "=== App Logs ==="
+          docker-compose logs app || true
+          echo "=== Container Status ==="
+          docker-compose ps
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          docker-compose down -v
+          docker system prune -f
+
+  docker-compose-full-stack:
+    name: Docker Compose - Full Stack
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Start full monitoring stack
+        run: |
+          echo "Starting full monitoring stack..."
+          docker-compose up -d
+          echo "✓ Full monitoring stack started successfully"
+
+      - name: Wait for all services to be ready
+        run: |
+          echo "Waiting for all services to be ready..."
+          
+          # Wait for all services to be healthy
+          services=("nginx:8081/stub_status" "nginx-exporter:9113/metrics" "prometheus:9090/-/ready" "grafana:3000/api/health")
+          
+          for service in "${services[@]}"; do
+            IFS=':' read -r host_port path <<< "$service"
+            
+            for i in {1..60}; do
+              if curl -s "http://localhost:${host_port}${path}" > /dev/null 2>&1; then
+                echo "✓ Service ${host_port} is ready"
+                break
+              fi
+              echo "Waiting for service ${host_port}... (attempt $i/60)"
+              sleep 2
+            done
+          done
+
+      - name: Verify all containers are running
+        run: |
+          echo "Verifying all containers are running..."
+          docker-compose ps
+          
+          # Check that all expected services are up
+          services=("nginx" "nginx-exporter" "prometheus" "grafana" "app")
+          
+          for service in "${services[@]}"; do
+            if ! docker-compose ps "$service" | grep -q "Up"; then
+              echo "❌ Service $service is not running"
+              docker-compose logs "$service"
+              exit 1
+            fi
+            echo "✓ Service $service is running"
+          done
+
+      - name: Test full stack integration
+        run: |
+          echo "Testing full stack integration..."
+          
+          # Test Prometheus can scrape NGINX Exporter
+          prometheus_targets=$(curl -s http://localhost:9090/api/v1/targets)
+          if echo "$prometheus_targets" | grep -q "nginx-exporter:9113"; then
+            echo "✓ Prometheus is configured to scrape NGINX Exporter"
+          else
+            echo "❌ Prometheus is not configured to scrape NGINX Exporter"
+            exit 1
+          fi
+          
+          # Test Grafana is accessible
+          grafana_health=$(curl -s http://localhost:3000/api/health)
+          if echo "$grafana_health" | grep -q "ok"; then
+            echo "✓ Grafana is healthy"
+          else
+            echo "❌ Grafana is not healthy"
+            exit 1
+          fi
+
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          echo "=== All Container Logs ==="
+          docker-compose logs
+          echo "=== Container Status ==="
+          docker-compose ps
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          docker-compose down -v
+          docker system prune -f
