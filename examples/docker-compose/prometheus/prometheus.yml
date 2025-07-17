@@ -3,8 +3,8 @@ global:
   evaluation_interval: 15s
 
 rule_files: []
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+# - "first_rules.yml"
+# - "second_rules.yml"
 
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.

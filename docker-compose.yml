@@ -85,8 +85,8 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
 
 volumes:
-  prometheus_data:
-  grafana_data:
+  prometheus_data: {}
+  grafana_data: {}
 
 networks:
   nginx-monitoring:
