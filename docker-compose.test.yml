@@ -1,13 +1,11 @@
-version: '3.8'
-
 services:
   # Sample web application
   app:
     image: nginx:alpine
     container_name: sample-app
     volumes:
-      - ./docker/app/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/app/html:/usr/share/nginx/html
+      - ./examples/docker-compose/app/nginx.conf:/etc/nginx/nginx.conf
+      - ./examples/docker-compose/app/html:/usr/share/nginx/html
     ports:
       - "8080:80"
     networks:
@@ -21,8 +19,8 @@ services:
     depends_on:
       - app
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./examples/docker-compose/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./examples/docker-compose/nginx/conf.d:/etc/nginx/conf.d
     ports:
       - "80:80"
       - "8081:8081"  # stub_status port
@@ -44,6 +42,51 @@ services:
     networks:
       - nginx-monitoring
     restart: unless-stopped
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    depends_on:
+      - nginx-exporter
+    volumes:
+      - ./examples/docker-compose/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - nginx-monitoring
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --web.console.templates=/etc/prometheus/consoles
+      - --storage.tsdb.retention.time=200h
+      - --web.enable-lifecycle
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./examples/docker-compose/grafana/provisioning:/etc/grafana/provisioning
+      - ./examples/docker-compose/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    networks:
+      - nginx-monitoring
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+
+volumes:
+  prometheus_data:
+  grafana_data:
 
 networks:
   nginx-monitoring:

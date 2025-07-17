@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-rule_files:
+rule_files: []
   # - "first_rules.yml"
   # - "second_rules.yml"
 
