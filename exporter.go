@@ -230,9 +230,9 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 			os.Exit(1)
 		}
 
-		transport.DialContext = func(_ context.Context, _, _ string) (net.Conn, error) {
+		transport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
 			d := &net.Dialer{}
-			return d.DialContext(context.Background(), "unix", socketPath)
+			return d.DialContext(ctx, "unix", socketPath)
 		}
 		addr = "http://unix" + requestPath
 	}
