@@ -155,7 +155,7 @@ jobs:
         if: github.event_name != 'pull_request'
 
       - name: Download Syft
-        uses: anchore/sbom-action/download-syft@9246b90769f852b3a8921f330c59e0b3f439d6e9 # v0.20.1
+        uses: anchore/sbom-action/download-syft@7b36ad622f042cab6f59a75c2ac24ccb256e9b45 # v0.20.4
         if: github.ref_type == 'tag'
 
       - name: Install Cosign
@@ -207,7 +207,7 @@ jobs:
           sbom: true
 
       - name: Scan image
-        uses: anchore/scan-action@be7a22da4f22dde446c4c4c099887ff5b256526c # v6.3.0
+        uses: anchore/scan-action@1638637db639e0ade3258b51db49a9a137574c3e # v6.5.1
         id: scan
         continue-on-error: true
         with:
