@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	plusclient "github.com/nginx/nginx-plus-go-client/v2/client"
+	plusclient "github.com/nginx/nginx-plus-go-client/v3/client"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
