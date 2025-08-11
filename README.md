@@ -49,6 +49,7 @@ NGINX Prometheus exporter makes it possible to monitor NGINX or NGINX Plus using
     - [Stream Connections Limiting](#stream-connections-limiting)
     - [Cache](#cache)
     - [Worker](#worker)
+  - [Slabs](#slabs)
 - [Troubleshooting](#troubleshooting)
 - [Releases](#releases)
   - [Docker images](#docker-images)
@@ -431,6 +432,17 @@ Flags:
 | `nginxplus_worker_connection_idle`       | Gauge   | The current number of idle client connection                             | `id`, `pid` |
 | `nginxplus_worker_http_requests_total`   | Counter | The total number of client requests received                             | `id`, `pid` |
 | `nginxplus_worker_http_requests_current` | Gauge   | The current number of client requests that are currently being processed | `id`, `pid` |
+
+### [Slabs](https://nginx.org/en/docs/http/ngx_http_api_module.html#slabs_)
+
+| Name                                     | Type    | Description                                                                     | Labels         |
+| ---------------------------------------- | ------- | ------------------------------------------------------------------------------- | -------------- |
+| `nginxplus_slab_fails`                   | Gauge   | Total number of unsuccessful attempts to allocate memory of specified size      | `slot`, `zone` |
+| `nginxplus_slab_reqs`                    | Gauge   | Total number of attempts to allocate memory of specified size                   | `slot`, `zone` |
+| `nginxplus_slab_free`                    | Gauge   | Current number of free memory slots                                             | `slot`, `zone` |
+| `nginxplus_slab_used`                    | Gauge   | Current number of used memory slots                                             | `slot`, `zone` |
+| `nginxplus_slab_pages_free`              | Gauge   | Current number of free memory pages                                             | `zone`         |
+| `nginxplus_slab_pages_used`              | Gauge   | Current number of used memory pages                                             | `zone`         |
 
 Connect to the `/metrics` page of the running exporter to see the complete list of metrics along with their
 descriptions. Note: to see server zones related metrics you must configure [status
