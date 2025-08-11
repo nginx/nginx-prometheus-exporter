@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	plusclient "github.com/nginx/nginx-plus-go-client/v2/client"
+	plusclient "github.com/nginx/nginx-plus-go-client/v3/client"
 	"github.com/nginx/nginx-prometheus-exporter/client"
 	"github.com/nginx/nginx-prometheus-exporter/collector"
 
@@ -230,8 +230,9 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 			os.Exit(1)
 		}
 
-		transport.DialContext = func(_ context.Context, _, _ string) (net.Conn, error) {
-			return net.Dial("unix", socketPath)
+		transport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			d := &net.Dialer{}
+			return d.DialContext(ctx, "unix", socketPath)
 		}
 		addr = "http://unix" + requestPath
 	}

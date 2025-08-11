@@ -135,7 +135,7 @@ jobs:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
 
       - name: Create/Update Draft
-        uses: lucacome/draft-release@38def8b74645796e9743b53e0f187d4a8915ea3e # v1.2.3
+        uses: lucacome/draft-release@00f74370c044c322da6cb52acc707d62c7762c71 # v1.2.4
         with:
           minor-label: "enhancement"
           major-label: "change"
@@ -155,11 +155,11 @@ jobs:
         if: github.event_name != 'pull_request'
 
       - name: Download Syft
-        uses: anchore/sbom-action/download-syft@9246b90769f852b3a8921f330c59e0b3f439d6e9 # v0.20.1
+        uses: anchore/sbom-action/download-syft@7b36ad622f042cab6f59a75c2ac24ccb256e9b45 # v0.20.4
         if: github.ref_type == 'tag'
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
         if: github.ref_type == 'tag'
 
       - name: Setup Snapcraft
@@ -178,7 +178,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
         with:
-          version: v2.10.2 # renovate: datasource=github-tags depName=goreleaser/goreleaser
+          version: v2.11.2 # renovate: datasource=github-tags depName=goreleaser/goreleaser
           args: ${{ github.ref_type == 'tag' && 'release' || 'build --snapshot' }} --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -207,7 +207,7 @@ jobs:
           sbom: true
 
       - name: Scan image
-        uses: anchore/scan-action@be7a22da4f22dde446c4c4c099887ff5b256526c # v6.3.0
+        uses: anchore/scan-action@1638637db639e0ade3258b51db49a9a137574c3e # v6.5.1
         id: scan
         continue-on-error: true
         with:
@@ -216,7 +216,7 @@ jobs:
           add-cpes-if-none: true
 
       - name: Upload scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@181d5eefc20863364f96762470ba6f862bdef56b # v3.29.2
+        uses: github/codeql-action/upload-sarif@51f77329afa6477de8c49fc9c7046c15b9a4e79d # v3.29.5
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
