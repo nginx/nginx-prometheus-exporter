@@ -283,6 +283,7 @@ func NewNginxPlusCollector(nginxClient *plusclient.NginxClient, namespace string
 			"ssl_handshakes":        newGlobalMetric(namespace, "ssl_handshakes", "Successful SSL handshakes", constLabels),
 			"ssl_handshakes_failed": newGlobalMetric(namespace, "ssl_handshakes_failed", "Failed SSL handshakes", constLabels),
 			"ssl_session_reuses":    newGlobalMetric(namespace, "ssl_session_reuses", "Session reuses during SSL handshake", constLabels),
+			"license_active_till":   newGlobalMetric(namespace, "license_expiration_timestamp_seconds", "License expiration date (expressed as Unix Epoch Time)", constLabels),
 		},
 		serverZoneMetrics: map[string]*prometheus.Desc{
 			"processing":            newServerZoneMetric(namespace, "processing", "Client requests that are currently being processed", variableLabelNames.ServerZoneVariableLabelNames, constLabels),
@@ -653,6 +654,14 @@ func (c *NginxPlusCollector) Collect(ch chan<- prometheus.Metric) {
 		prometheus.CounterValue, float64(stats.SSL.HandshakesFailed))
 	ch <- prometheus.MustNewConstMetric(c.totalMetrics["ssl_session_reuses"],
 		prometheus.CounterValue, float64(stats.SSL.SessionReuses))
+
+	license, err := c.nginxClient.GetNginxLicense(context.TODO())
+	if err != nil {
+		c.logger.Warn("error getting license information", "error", err.Error())
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.totalMetrics["license_active_till"],
+			prometheus.GaugeValue, float64(license.ActiveTill))
+	}
 
 	for name, zone := range stats.ServerZones {
 		labelValues := []string{name}
