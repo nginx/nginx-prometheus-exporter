@@ -262,9 +262,9 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 			remoteAddr := conn.RemoteAddr()
 			transportProtocol := proxyproto.TCPv4
 
-			switch addr := remoteAddr.(type) {
+			switch remoteAddrTyped := remoteAddr.(type) {
 			case *net.TCPAddr:
-				if addr.IP.To4() == nil {
+				if remoteAddrTyped.IP.To4() == nil {
 					transportProtocol = proxyproto.TCPv6
 				}
 			case *net.UnixAddr:
@@ -279,6 +279,7 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 				DestinationAddr:   remoteAddr,
 			}
 
+			// as we do not use any TLVs, header size should be pretty small, hence we only check for error, assuming the whole header went out in a single packet
 			_, err = header.WriteTo(conn)
 			if err != nil {
 				return nil, fmt.Errorf("writing proxyproto header: %w", err)
