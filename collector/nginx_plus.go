@@ -274,15 +274,19 @@ func NewNginxPlusCollector(nginxClient *plusclient.NginxClient, namespace string
 		nginxClient:                    nginxClient,
 		logger:                         logger,
 		totalMetrics: map[string]*prometheus.Desc{
-			"connections_accepted":  newGlobalMetric(namespace, "connections_accepted", "Accepted client connections", constLabels),
-			"connections_dropped":   newGlobalMetric(namespace, "connections_dropped", "Dropped client connections", constLabels),
-			"connections_active":    newGlobalMetric(namespace, "connections_active", "Active client connections", constLabels),
-			"connections_idle":      newGlobalMetric(namespace, "connections_idle", "Idle client connections", constLabels),
-			"http_requests_total":   newGlobalMetric(namespace, "http_requests_total", "Total http requests", constLabels),
-			"http_requests_current": newGlobalMetric(namespace, "http_requests_current", "Current http requests", constLabels),
-			"ssl_handshakes":        newGlobalMetric(namespace, "ssl_handshakes", "Successful SSL handshakes", constLabels),
-			"ssl_handshakes_failed": newGlobalMetric(namespace, "ssl_handshakes_failed", "Failed SSL handshakes", constLabels),
-			"ssl_session_reuses":    newGlobalMetric(namespace, "ssl_session_reuses", "Session reuses during SSL handshake", constLabels),
+			"connections_accepted":           newGlobalMetric(namespace, "connections_accepted", "Accepted client connections", constLabels),
+			"connections_dropped":            newGlobalMetric(namespace, "connections_dropped", "Dropped client connections", constLabels),
+			"connections_active":             newGlobalMetric(namespace, "connections_active", "Active client connections", constLabels),
+			"connections_idle":               newGlobalMetric(namespace, "connections_idle", "Idle client connections", constLabels),
+			"http_requests_total":            newGlobalMetric(namespace, "http_requests_total", "Total http requests", constLabels),
+			"http_requests_current":          newGlobalMetric(namespace, "http_requests_current", "Current http requests", constLabels),
+			"ssl_handshakes":                 newGlobalMetric(namespace, "ssl_handshakes", "Successful SSL handshakes", constLabels),
+			"ssl_handshakes_failed":          newGlobalMetric(namespace, "ssl_handshakes_failed", "Failed SSL handshakes", constLabels),
+			"ssl_session_reuses":             newGlobalMetric(namespace, "ssl_session_reuses", "Session reuses during SSL handshake", constLabels),
+			"license_active_till":            newGlobalMetric(namespace, "license_expiration_timestamp_seconds", "License expiration date (expressed as Unix Epoch Time)", constLabels),
+			"license_reporting_healthy":      newGlobalMetric(namespace, "license_reporting_healthy", "Indicates whether the reporting state is still considered healthy despite recent failed attempts", constLabels),
+			"license_reporting_fails":        newGlobalMetric(namespace, "license_reporting_fails_count", "Number of failed reporting attempts, reset each time the usage report is successfully sent", constLabels),
+			"license_reporting_grace_period": newGlobalMetric(namespace, "license_reporting_grace_period_seconds", "Number of seconds before traffic processing is stopped after unsuccessful report attempt", constLabels),
 		},
 		serverZoneMetrics: map[string]*prometheus.Desc{
 			"processing":            newServerZoneMetric(namespace, "processing", "Client requests that are currently being processed", variableLabelNames.ServerZoneVariableLabelNames, constLabels),
@@ -653,6 +657,29 @@ func (c *NginxPlusCollector) Collect(ch chan<- prometheus.Metric) {
 		prometheus.CounterValue, float64(stats.SSL.HandshakesFailed))
 	ch <- prometheus.MustNewConstMetric(c.totalMetrics["ssl_session_reuses"],
 		prometheus.CounterValue, float64(stats.SSL.SessionReuses))
+
+	license, err := c.nginxClient.GetNginxLicense(context.TODO())
+	if err != nil {
+		c.logger.Warn("error getting license information", "error", err.Error())
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.totalMetrics["license_active_till"],
+			prometheus.GaugeValue, float64(license.ActiveTill))
+
+		if license.Reporting != nil {
+			if license.Reporting.Healthy {
+				ch <- prometheus.MustNewConstMetric(c.totalMetrics["license_reporting_healthy"],
+					prometheus.GaugeValue, float64(1))
+			} else {
+				ch <- prometheus.MustNewConstMetric(c.totalMetrics["license_reporting_healthy"],
+					prometheus.GaugeValue, float64(0))
+			}
+			ch <- prometheus.MustNewConstMetric(c.totalMetrics["license_reporting_fails"],
+				prometheus.GaugeValue, float64(license.Reporting.Fails))
+
+			ch <- prometheus.MustNewConstMetric(c.totalMetrics["license_reporting_grace_period"],
+				prometheus.GaugeValue, float64(license.Reporting.Grace))
+		}
+	}
 
 	for name, zone := range stats.ServerZones {
 		labelValues := []string{name}
