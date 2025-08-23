@@ -27,6 +27,7 @@ NGINX Prometheus exporter makes it possible to monitor NGINX or NGINX Plus using
   - [Prerequisites](#prerequisites)
   - [Running the Exporter in a Docker Container](#running-the-exporter-in-a-docker-container)
   - [Running the Exporter Binary](#running-the-exporter-binary)
+  - [Docker Compose Setup](#docker-compose-setup)
 - [Usage](#usage)
   - [Command-line Arguments](#command-line-arguments)
 - [Exported Metrics](#exported-metrics)
@@ -154,6 +155,31 @@ To start the exporter we use the [docker run](https://docs.docker.com/engine/ref
 **Note**. The `nginx-prometheus-exporter` is not a daemon. To run the exporter as a system service (daemon), you can
 follow the example in [examples/systemd](./examples/systemd/README.md). Alternatively, you can run the exporter
 in a Docker container.
+
+### Docker Compose Setup
+
+For a complete monitoring stack including NGINX, NGINX Prometheus Exporter, Prometheus, and Grafana,
+see the [Docker Compose example](./examples/docker-compose/README.md).
+
+The Docker Compose setup provides:
+
+- NGINX server with stub_status enabled
+- NGINX Prometheus Exporter for metrics collection
+- Prometheus for time-series storage
+- Grafana for visualization with pre-configured dashboards
+- Sample web application for testing
+
+Quick start (nginx-exporter only):
+
+```console
+docker-compose up -d nginx-exporter
+```
+
+For a complete monitoring stack with all services:
+
+```console
+docker-compose up -d
+```
 
 ## Usage
 
