@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.17
+# syntax=docker/dockerfile:1.19
 FROM golang:1.25.1 AS builder
 ARG VERSION
 ARG TARGETARCH
