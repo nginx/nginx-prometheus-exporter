@@ -61,7 +61,7 @@ func parsePositiveDuration(s string) (positiveDuration, error) {
 func createPositiveDurationFlag(s kingpin.Settings) (target *time.Duration) {
 	target = new(time.Duration)
 	s.SetValue(&positiveDuration{Duration: *target})
-	return
+	return target
 }
 
 func parseUnixSocketAddress(address string) (string, string, error) {
