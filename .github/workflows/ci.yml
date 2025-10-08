@@ -186,6 +186,11 @@ jobs:
             - NGINX Plus R19 or newer.
         if: github.event_name != 'pull_request'
 
+
+      - name: Download Syft
+        uses: anchore/sbom-action/download-syft@f8bdd1d8ac5e901a77a92f111440fdb1b593736b # v0.20.6
+        if: github.event_name != 'pull_request'
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
