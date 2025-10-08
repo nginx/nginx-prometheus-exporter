@@ -281,7 +281,7 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 
 			// as we do not use any TLVs, header size should be pretty small, hence we only check for error, assuming the whole header went out in a single packet
 			_, err = header.WriteTo(conn)
-			if err == nil {
+			if err != nil {
 				conn.Close()
 				return nil, fmt.Errorf("writing proxyproto header via %s to %s: %w", network, addr, err)
 			}
