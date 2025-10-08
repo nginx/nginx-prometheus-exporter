@@ -50,6 +50,10 @@ jobs:
       id-token: write # for OIDC login to AWS ECR and goreleaser/goreleaser-action to sign artifacts
       packages: write # for docker/build-push-action to push to GHCR
       issues: write # for goreleaser/goreleaser-action to close milestones
+    env:
+      GOPROXY: ${{ secrets.ARTIFACTORY_ENDPOINT }}
+    outputs:
+      binaries: ${{ steps.prom_binaries.outputs.json }}
     services:
       registry:
         image: registry:3
@@ -65,6 +69,15 @@ jobs:
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: stable
+
+      - name: Setup netrc
+        run: |
+          cat <<EOF > $HOME/.netrc
+          machine azr.artifactory.f5net.com
+              login ${{ secrets.ARTIFACTORY_USER }}
+              password ${{ secrets.ARTIFACTORY_TOKEN }}
+          EOF
+          chmod 600 $HOME/.netrc
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
@@ -162,6 +175,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NGINX_GITHUB_TOKEN: ${{ secrets.NGINX_PAT }}
 
+      - name: Extract NGINX Prometheus Exporter binary info
+        id: prom_binaries
+        run: |
+          curl -sSL https://raw.githubusercontent.com/nginx/k8s-common/main/files/binary-json.sh -o binary-json.sh
+          chmod +x binary-json.sh
+          echo "json=$(./binary-json.sh ${{ github.workspace }}/dist ${{ github.event.repository.name }} "nginx-prometheus-exporter")" >> $GITHUB_OUTPUT
+        
+      - name: Store Artifacts in Cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ github.workspace }}/dist
+          key: nginx-prometheus-exporter-${{ github.sha }}
+
       - name: Print NGINX Prometheus Exporter info
         run: ./dist/nginx-prometheus-exporter_linux_amd64_v1/nginx-prometheus-exporter --version
         continue-on-error: false
@@ -197,3 +223,82 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
+
+  generate-assertion-doc:
+    if: ${{ github.event_name != 'pull_request' }}
+    name: Assertion Doc ${{ matrix.prometheus.arch }}
+    needs: [build-docker, variables]
+    runs-on: ubuntu-24.04-amd64
+    permissions:
+      contents: read
+      id-token: write # for compliance-rules action to sign assertion doc
+    strategy:
+      fail-fast: false
+      matrix:
+        prometheus: ${{ fromJSON( needs.build-docker.outputs.binaries ) }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Golang Environment
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Configure pipeline Variables
+        id: vars
+        run: |
+          timestamp=$(date --iso-8601=seconds)
+          echo "timestamp=${timestamp}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+  
+      - name: Setup netrc
+        run: |
+          cat <<EOF > $HOME/.netrc
+          machine azr.artifactory.f5net.com
+              login ${{ secrets.ARTIFACTORY_USER }}
+              password ${{ secrets.ARTIFACTORY_TOKEN }}
+          EOF
+          chmod 600 $HOME/.netrc
+
+      - name: Fetch Cached Artifacts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ github.workspace }}/dist
+          key: nginx-prometheus-exporter-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: List packages in Go binary
+        id: godeps
+        env:
+          GOPROXY: ${{ needs.variables.outputs.go_proxy }}
+        run: |
+          go version -m ${{ matrix.prometheus.path }} > go_version_out_${{ github.run_id }}_${{ github.run_number }}.txt
+          echo "go_version_out=$(find -type f -name "go_version_out*.txt" | head -n 1)" >> $GITHUB_OUTPUT
+          echo "artifact_digest=$(openssl dgst -sha256 -r ${{ matrix.prometheus.path }} | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+
+      - name: Generate Assertion Document
+        id: assertiondoc
+        uses: nginxinc/compliance-rules/.github/actions/assertion@83e452166aaf0ad8f07caf91a4f1f903b3dea1e6 # v0.3.0
+        with:
+          artifact-name: "${{ github.event.repository.name }}_${{ github.sha }}_${{ github.run_number }}_${{ matrix.prometheus.os }}_${{ matrix.prometheus.arch }}"
+          artifact-digest: ${{ steps.godeps.outputs.artifact_digest }}
+          build-type: "github.com"
+          builder-id: "github"
+          builder-version: v0.1.0
+          started-on: ${{ steps.vars.outputs.timestamp }}
+          finished-on: ${{ steps.vars.outputs.timestamp }}
+          invocation-id: ${{ github.run_id }}.${{ github.run_number }}.${{ github.run_attempt }}
+          artifactory-user: ${{ secrets.ARTIFACTORY_USER }}
+          artifactory-api-token: ${{ secrets.ARTIFACTORY_TOKEN }}
+          artifactory-url: ${{ secrets.ARTIFACTORY_URL }}
+          artifactory-repo: 'f5-nginx-go-local-approved-dependency'
+          assertion-doc-file: assertion_${{ github.event.repository.name }}_${{ github.sha }}_${{ github.run_id }}_${{ github.run_number }}_${{ matrix.prometheus.os }}_${{ matrix.prometheus.arch }}.json
+          build-content-path: ${{ steps.godeps.outputs.go_version_out }}
+
+      - name: Sign and Store Assertion Document
+        id: sign
+        uses: nginxinc/compliance-rules/.github/actions/sign@83e452166aaf0ad8f07caf91a4f1f903b3dea1e6 # v0.3.0
+        with:
+          assertion-doc: ${{ steps.assertiondoc.outputs.assertion-document-path }}
