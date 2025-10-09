@@ -93,6 +93,7 @@ var (
 	sslClientCert = kingpin.Flag("nginx.ssl-client-cert", "Path to the PEM encoded client certificate file to use when connecting to the server.").Default("").Envar("SSL_CLIENT_CERT").String()
 	sslClientKey  = kingpin.Flag("nginx.ssl-client-key", "Path to the PEM encoded client certificate key file to use when connecting to the server.").Default("").Envar("SSL_CLIENT_KEY").String()
 	useProxyProto = kingpin.Flag("nginx.proxy-protocol", "Pass proxy protocol payload to nginx listeners.").Default("false").Envar("PROXY_PROTOCOL").Bool()
+	HostHeader    = kingpin.Flag("nginx.hostheader", "Host header to add to HTTP request.").Default("").Envar("HOST_HEADER").String()
 
 	// Custom command-line flags.
 	timeout = createPositiveDurationFlag(kingpin.Flag("nginx.timeout", "A timeout for scraping metrics from NGINX or NGINX Plus.").Default("5s").Envar("TIMEOUT").HintOptions("5s", "10s", "30s", "1m", "5m"))
@@ -164,14 +165,14 @@ func main() {
 	}
 
 	if len(*scrapeURIs) == 1 {
-		registerCollector(logger, transport, (*scrapeURIs)[0], constLabels)
+		registerCollector(logger, transport, (*scrapeURIs)[0], constLabels, *HostHeader)
 	} else {
 		for _, addr := range *scrapeURIs {
 			// add scrape URI to const labels
 			labels := maps.Clone(constLabels)
 			labels["addr"] = addr
 
-			registerCollector(logger, transport, addr, labels)
+			registerCollector(logger, transport, addr, labels, *HostHeader)
 		}
 	}
 
@@ -224,8 +225,7 @@ func main() {
 }
 
 func registerCollector(logger *slog.Logger, transport *http.Transport,
-	addr string, labels map[string]string,
-) {
+	addr string, labels map[string]string, hostheader string) {
 	var socketPath string
 
 	if strings.HasPrefix(addr, "unix:") {
@@ -309,7 +309,7 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 		variableLabelNames := collector.NewVariableLabelNames(nil, nil, nil, nil, nil, nil, nil)
 		prometheus.MustRegister(collector.NewNginxPlusCollector(plusClient, "nginxplus", variableLabelNames, labels, logger))
 	} else {
-		ossClient := client.NewNginxClient(httpClient, addr)
+		ossClient := client.NewNginxClient(httpClient, addr, hostheader)
 		prometheus.MustRegister(collector.NewNginxCollector(ossClient, "nginx", labels, logger))
 	}
 }
