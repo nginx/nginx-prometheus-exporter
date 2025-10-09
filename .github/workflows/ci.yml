@@ -206,7 +206,7 @@ jobs:
           curl -sSL https://raw.githubusercontent.com/nginx/k8s-common/main/files/binary-json.sh -o binary-json.sh
           chmod +x binary-json.sh
           echo "json=$(./binary-json.sh ${{ github.workspace }}/dist ${{ github.event.repository.name }} "nginx-prometheus-exporter")" >> $GITHUB_OUTPUT
-        
+
       - name: Store Artifacts in Cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -250,7 +250,7 @@ jobs:
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
         if: github.event_name != 'pull_request'
-      
+
   generate-assertion-doc:
     if: ${{ github.event_name != 'pull_request' }}
     name: Assertion Doc ${{ matrix.prometheus.arch }}

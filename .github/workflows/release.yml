@@ -181,7 +181,7 @@ jobs:
           curl -sSL https://raw.githubusercontent.com/nginx/k8s-common/main/files/binary-json.sh -o binary-json.sh
           chmod +x binary-json.sh
           echo "json=$(./binary-json.sh ${{ github.workspace }}/dist ${{ github.event.repository.name }} "nginx-prometheus-exporter")" >> $GITHUB_OUTPUT
-        
+
       - name: Store Artifacts in Cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -251,7 +251,7 @@ jobs:
           timestamp=$(date --iso-8601=seconds)
           echo "timestamp=${timestamp}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
-  
+
       - name: Setup netrc
         run: |
           cat <<EOF > $HOME/.netrc
