@@ -11,6 +11,16 @@ on:
         required: false
         default: false
         type: boolean
+      goreleaser_args:
+        description: 'Additional GoReleaser args'
+        required: false
+        default: ''
+        type: string
+      skip_jobs:
+        description: 'Comma-separated list of jobs to skip (e.g. tag,build-docker,generate-assertion-doc)'
+        required: false
+        default: ''
+        type: string
 
 env:
   DOCKER_PLATFORMS: "linux/arm/v5,linux/arm/v6,linux/arm/v7,linux/arm64,linux/amd64,linux/ppc64le,linux/s390x,linux/mips64le,linux/386,linux/riscv64"
@@ -41,7 +51,42 @@ jobs:
         id: vars
         run: echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
 
+  tag:
+    if: ${{ !contains(inputs.skip_jobs, 'tag') }}
+    name: Create Tag for release
+    runs-on: ubuntu-24.04
+    needs: [variables]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Create new release Tag
+        run: |
+          git config --global user.email "kubernetes@nginx.com"
+          git config --global user.name "NGINX Kubernetes Team"
+          tag="v${{ needs.variables.outputs.tag }}"
+          if ! git rev-parse --verify refs/tags/${tag} 2>/dev/null; then
+            echo "Adding tag ${tag}."
+            git tag -a ${tag} -m "Version ${tag#v*}"
+            echo "Pushing tag ${tag} to main branch"
+            if ! ${{ inputs.dry_run }}; then
+              git push origin "${tag}"
+            else
+              echo "DRY RUN not making any changes"
+              git push --dry-run origin "${tag}"
+            fi
+          else
+            echo "Warning: Tag ${tag} already exists. Not making any changes"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-docker:
+    if: ${{ !contains(inputs.skip_jobs, 'build-docker') }}
     name: Build Docker Image
     runs-on: ubuntu-24.04-amd64
     permissions:
@@ -54,6 +99,7 @@ jobs:
       GOPROXY: ${{ secrets.ARTIFACTORY_ENDPOINT }}
     outputs:
       binaries: ${{ steps.prom_binaries.outputs.json }}
+    needs: [variables]
     services:
       registry:
         image: registry:3
@@ -130,7 +176,7 @@ jobs:
             name=quay.io/nginx/nginx-prometheus-exporter,enable=true
             name=localhost:5000/nginx/nginx-prometheus-exporter
           tags: |
-            type=raw,value=${{ github.event.inputs.version }}
+            type=raw,value=${{ needs.variables.outputs.tag }}
           labels: |
             org.opencontainers.image.vendor=NGINX Inc <integrations@nginx.com>
         env:
@@ -170,7 +216,7 @@ jobs:
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           version: v2.12.5 # renovate: datasource=github-tags depName=goreleaser/goreleaser
-          args: ${{ github.event.inputs.dry_run && 'build --snapshot' || 'release' }} --clean
+          args: ${{ github.event.inputs.dry_run && 'build --snapshot' || 'release' }} --clean ${{ github.event.inputs.goreleaser_args }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NGINX_GITHUB_TOKEN: ${{ secrets.NGINX_PAT }}
@@ -225,7 +271,7 @@ jobs:
           sarif_file: ${{ steps.scan.outputs.sarif }}
 
   generate-assertion-doc:
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ !contains(inputs.skip_jobs, 'generate-assertion-doc') }}
     name: Assertion Doc ${{ matrix.prometheus.arch }}
     needs: [build-docker, variables]
     runs-on: ubuntu-24.04-amd64
@@ -271,7 +317,7 @@ jobs:
       - name: List packages in Go binary
         id: godeps
         env:
-          GOPROXY: ${{ needs.variables.outputs.go_proxy }}
+          GOPROXY: ${{ secrets.ARTIFACTORY_ENDPOINT }}
         run: |
           go version -m ${{ matrix.prometheus.path }} > go_version_out_${{ github.run_id }}_${{ github.run_number }}.txt
           echo "go_version_out=$(find -type f -name "go_version_out*.txt" | head -n 1)" >> $GITHUB_OUTPUT
