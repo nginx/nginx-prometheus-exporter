@@ -252,6 +252,11 @@ jobs:
           sarif_file: ${{ steps.scan.outputs.sarif }}
         if: github.event_name != 'pull_request'
 
+      - name: Clean up NETRC
+        run: |
+          rm -f $HOME/.netrc
+        if: ${{ always() }}
+
   generate-assertion-doc:
     if: ${{ github.event_name != 'pull_request' }}
     name: Assertion Doc ${{ matrix.prometheus.arch }}

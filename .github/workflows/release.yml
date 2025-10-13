@@ -269,6 +269,11 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
+      
+      - name: Clean up NETRC
+        run: |
+          rm -f $HOME/.netrc
+        if: ${{ always() }}
 
   generate-assertion-doc:
     if: ${{ !contains(inputs.skip_jobs, 'generate-assertion-doc') }}
