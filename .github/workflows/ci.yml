@@ -40,8 +40,8 @@ jobs:
             go_proxy="${{ secrets.ARTIFACTORY_DEV_ENDPOINT }}"
           elif [ "${{ github.ref_name }}" = "${{ github.event.repository.default_branch }}" ]; then
             go_proxy="${{ secrets.ARTIFACTORY_ENDPOINT }}"
-          else 
-            go_proxy="https://proxy.golang.org,direct"  
+          else
+            go_proxy="https://proxy.golang.org,direct"
           fi
           echo "go_proxy=${go_proxy}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
