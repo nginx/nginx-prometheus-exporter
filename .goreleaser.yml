@@ -44,7 +44,7 @@ changelog:
 archives:
   - format_overrides:
       - goos: windows
-        format: zip
+        formats: ['zip']
     files:
       - README.md
       - LICENSE
@@ -71,22 +71,22 @@ signs:
 milestones:
   - close: true
 
-brews:
+homebrew_casks:
   - repository:
       owner: nginx
       name: homebrew-tap
       token: "{{ .Env.NGINX_GITHUB_TOKEN }}"
-    directory: Formula
+    directory: Casks
     homepage: https://github.com/nginx/nginx-prometheus-exporter
     description: NGINX Prometheus Exporter for NGINX and NGINX Plus
-    license: Apache-2.0
     commit_author:
       name: nginx-bot
       email: integrations@nginx.com
-    extra_install: |-
-      bash_completion.install "completions/nginx-prometheus-exporter.bash" => "nginx-prometheus-exporter"
-      zsh_completion.install "completions/nginx-prometheus-exporter.zsh" => "_nginx-prometheus-exporter"
-      man1.install "manpages/nginx-prometheus-exporter.1.gz"
+    manpages:
+      - "manpages/nginx-prometheus-exporter.1.gz"
+    completions:
+      bash: "completions/nginx-prometheus-exporter.bash"
+      zsh: "completions/nginx-prometheus-exporter.zsh"
 
 nix:
   - name: nginx-prometheus-exporter
