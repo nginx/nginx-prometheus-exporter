@@ -37,13 +37,12 @@ jobs:
           forked_workflow=${{ (github.event.pull_request && github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name) || github.repository != 'nginx/nginx-prometheus-exporter' }}
           echo "forked_workflow=${forked_workflow}" >> $GITHUB_OUTPUT
           if [ "$forked_workflow" = "false" ] && [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
-            go_proxy="${{ secrets.ARTIFACTORY_DEV_ENDPOINT }}"
+            go_proxy="${{ secrets.ARTIFACTORY_DEV_ENDPOINT }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref_name }}" = "${{ github.event.repository.default_branch }}" ]; then
-            go_proxy="${{ secrets.ARTIFACTORY_ENDPOINT }}"
+            go_proxy="${{ secrets.ARTIFACTORY_ENDPOINT }}" >> $GITHUB_OUTPUT
           else
-            go_proxy="https://proxy.golang.org,direct"
+            go_proxy="https://proxy.golang.org,direct" >> $GITHUB_OUTPUT
           fi
-          echo "go_proxy=${go_proxy}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
 
   unit-tests:
