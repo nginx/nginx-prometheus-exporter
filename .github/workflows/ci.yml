@@ -36,11 +36,12 @@ jobs:
         run: |
           forked_workflow=${{ (github.event.pull_request && github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name) || github.repository != 'nginx/nginx-prometheus-exporter' }}
           echo "forked_workflow=${forked_workflow}" >> $GITHUB_OUTPUT
-          go_proxy="https://proxy.golang.org,direct"
-          if [ "$forked_workflow" = "false" ]; then
+          if [ "$forked_workflow" = "false" ] && [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
             go_proxy="${{ secrets.ARTIFACTORY_DEV_ENDPOINT }}"
-          elif [ "${{ github.ref_name }}" = "main" ]; then
+          elif [ "${{ github.ref_name }}" = "${{ github.event.repository.default_branch }}" ]; then
             go_proxy="${{ secrets.ARTIFACTORY_ENDPOINT }}"
+          else 
+            go_proxy="https://proxy.golang.org,direct"  
           fi
           echo "go_proxy=${go_proxy}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
@@ -101,7 +102,7 @@ jobs:
               password ${{ secrets.ARTIFACTORY_TOKEN }}
           EOF
           chmod 600 $HOME/.netrc
-        if: needs.variables.outputs.forked_workflow == 'false' || github.ref_name == 'main'
+        if: needs.variables.outputs.forked_workflow == 'false'
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
