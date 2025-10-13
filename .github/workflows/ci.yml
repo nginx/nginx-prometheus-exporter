@@ -258,7 +258,7 @@ jobs:
 
   generate-assertion-doc:
     if: ${{ github.event_name != 'pull_request' }}
-    name: Assertion Doc ${{ matrix.prometheus.arch }}
+    name: Assertion Doc ${{ matrix.prometheus.os }}/${{ matrix.prometheus.arch }}
     needs: [build-docker, variables]
     runs-on: ubuntu-24.04-amd64
     permissions:

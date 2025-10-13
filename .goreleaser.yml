@@ -44,7 +44,7 @@ changelog:
 archives:
   - format_overrides:
       - goos: windows
-        formats: [ 'zip' ]
+        formats: ['zip']
     files:
       - README.md
       - LICENSE
