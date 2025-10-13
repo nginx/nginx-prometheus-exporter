@@ -1,18 +1,32 @@
-name: CI
+name: Release NGINX Prometheus Exporter
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: true
+      dry_run:
+        description: 'Dry run'
+        required: false
+        default: false
+        type: boolean
+      goreleaser_args:
+        description: 'Additional GoReleaser args'
+        required: false
+        default: ''
+        type: string
+      skip_jobs:
+        description: 'Comma-separated list of jobs to skip (e.g. tag,build-docker,generate-assertion-doc)'
+        required: false
+        default: ''
+        type: string
 
 env:
   DOCKER_PLATFORMS: "linux/arm/v5,linux/arm/v6,linux/arm/v7,linux/arm64,linux/amd64,linux/ppc64le,linux/s390x,linux/mips64le,linux/386,linux/riscv64"
 
 concurrency:
-  group: ${{ github.ref_name }}-ci
+  group: ${{ github.ref_name }}-release
   cancel-in-progress: true
 
 permissions:
@@ -20,66 +34,72 @@ permissions:
 
 jobs:
   variables:
-    name: Variables
+    name: Setup variables
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
     outputs:
-      go_proxy: ${{ steps.vars.outputs.go_proxy }}
-      forked_workflow: ${{ steps.vars.outputs.forked_workflow }}
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - name: Configure pipeline Variables
-        id: vars
-        run: |
-          forked_workflow=${{ (github.event.pull_request && github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name) || github.repository != 'nginx/nginx-prometheus-exporter' }}
-          echo "forked_workflow=${forked_workflow}" >> $GITHUB_OUTPUT
-          if [ "$forked_workflow" = "false" ] && [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
-            go_proxy="${{ secrets.ARTIFACTORY_DEV_ENDPOINT }}"
-          elif [ "${{ github.ref_name }}" = "${{ github.event.repository.default_branch }}" ]; then
-            go_proxy="${{ secrets.ARTIFACTORY_ENDPOINT }}"
-          else
-            go_proxy="https://proxy.golang.org,direct"
-          fi
-          echo "go_proxy=${go_proxy}" >> $GITHUB_OUTPUT
-          cat $GITHUB_OUTPUT
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-24.04
+      tag: ${{ steps.vars.outputs.tag }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
-      - name: Setup Golang Environment
+      - name: Set up Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version: stable
 
-      - name: Run Tests
-        run: make test
+      - name: Get version
+        id: vars
+        run: echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+  tag:
+    if: ${{ !contains(inputs.skip_jobs, 'tag') }}
+    name: Create Tag for release
+    runs-on: ubuntu-24.04
+    needs: [variables]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          fetch-depth: 0
+
+      - name: Create new release Tag
+        run: |
+          git config --global user.email "kubernetes@nginx.com"
+          git config --global user.name "NGINX Kubernetes Team"
+          tag="v${{ needs.variables.outputs.tag }}"
+          if ! git rev-parse --verify refs/tags/${tag} 2>/dev/null; then
+            echo "Adding tag ${tag}."
+            git tag -a ${tag} -m "Version ${tag#v*}"
+            echo "Pushing tag ${tag} to main branch"
+            if ! ${{ inputs.dry_run }}; then
+              git push origin "${tag}"
+            else
+              echo "DRY RUN not making any changes"
+              git push --dry-run origin "${tag}"
+            fi
+          else
+            echo "Warning: Tag ${tag} already exists. Not making any changes"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-docker:
+    if: ${{ !contains(inputs.skip_jobs, 'build-docker') }}
     name: Build Docker Image
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-24.04' || 'ubuntu-24.04-amd64' }}
+    runs-on: ubuntu-24.04-amd64
     permissions:
       contents: write # for lucacome/draft-release to create/update release draft
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       id-token: write # for OIDC login to AWS ECR and goreleaser/goreleaser-action to sign artifacts
       packages: write # for docker/build-push-action to push to GHCR
       issues: write # for goreleaser/goreleaser-action to close milestones
-    needs: [unit-tests, variables]
     env:
-      GOPROXY: ${{ needs.variables.outputs.go_proxy }}
+      GOPROXY: ${{ secrets.ARTIFACTORY_ENDPOINT }}
     outputs:
       binaries: ${{ steps.prom_binaries.outputs.json }}
+    needs: [variables]
     services:
       registry:
         image: registry:3
@@ -88,6 +108,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
 
       - name: Setup Golang Environment
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
@@ -102,7 +124,6 @@ jobs:
               password ${{ secrets.ARTIFACTORY_TOKEN }}
           EOF
           chmod 600 $HOME/.netrc
-        if: needs.variables.outputs.forked_workflow == 'false'
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
@@ -118,7 +139,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-        if: github.event_name != 'pull_request'
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
@@ -126,20 +146,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        if: github.event_name != 'pull_request'
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_PUBLIC_ECR }}
-        if: github.event_name != 'pull_request'
 
       - name: Login to Public ECR
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: public.ecr.aws
-        if: github.event_name != 'pull_request'
 
       - name: Login to Quay.io
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
@@ -147,21 +164,19 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_ROBOT_TOKEN }}
-        if: github.event_name != 'pull_request'
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
         with:
           images: |
-            name=nginx/nginx-prometheus-exporter,enable=${{ github.event_name != 'pull_request' }}
-            name=ghcr.io/nginx/nginx-prometheus-exporter,enable=${{ github.event_name != 'pull_request' }}
-            name=public.ecr.aws/nginx/nginx-prometheus-exporter,enable=${{ github.event_name != 'pull_request' }}
-            name=quay.io/nginx/nginx-prometheus-exporter,enable=${{ github.event_name != 'pull_request' }}
+            name=nginx/nginx-prometheus-exporter,enable=true
+            name=ghcr.io/nginx/nginx-prometheus-exporter,enable=true
+            name=public.ecr.aws/nginx/nginx-prometheus-exporter,enable=true
+            name=quay.io/nginx/nginx-prometheus-exporter,enable=true
             name=localhost:5000/nginx/nginx-prometheus-exporter
           tags: |
-            type=edge
-            type=ref,event=pr
+            type=raw,value=${{ needs.variables.outputs.tag }}
           labels: |
             org.opencontainers.image.vendor=NGINX Inc <integrations@nginx.com>
         env:
@@ -172,7 +187,7 @@ jobs:
         with:
           minor-label: "enhancement"
           major-label: "change"
-          publish: false
+          publish: ${{ !github.event.inputs.dry_run }}
           collapse-after: 30
           notes-footer: |
             ## Upgrade
@@ -185,18 +200,23 @@ jobs:
 
             - NGINX 0.1.18 or newer.
             - NGINX Plus R19 or newer.
-        if: github.event_name != 'pull_request'
-
 
       - name: Download Syft
         uses: anchore/sbom-action/download-syft@f8bdd1d8ac5e901a77a92f111440fdb1b593736b # v0.20.6
-        if: github.event_name != 'pull_request'
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@9280e7aca88deada44c930f1e2c78e21c3ae3edd # v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           version: v2.12.5 # renovate: datasource=github-tags depName=goreleaser/goreleaser
-          args: build --snapshot --clean
+          args: ${{ github.event.inputs.dry_run && 'build --snapshot' || 'release' }} --clean ${{ github.event.inputs.goreleaser_args }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NGINX_GITHUB_TOKEN: ${{ secrets.NGINX_PAT }}
@@ -216,7 +236,7 @@ jobs:
 
       - name: Print NGINX Prometheus Exporter info
         run: ./dist/nginx-prometheus-exporter_linux_amd64_v1/nginx-prometheus-exporter --version
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
@@ -228,29 +248,27 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ !github.event.inputs.dry_run }}
           cache-from: type=gha,scope=exporter
           cache-to: type=gha,scope=exporter,mode=max
-          no-cache: ${{ github.event_name != 'pull_request' }}
+          no-cache: true
           provenance: mode=max
           sbom: true
 
       - name: Scan image
-        uses: anchore/scan-action@f6601287cdb1efc985d6b765bbf99cb4c0ac29d8 # v7.0.0
+        uses: anchore/scan-action@1638637db639e0ade3258b51db49a9a137574c3e # v6.5.1
         id: scan
         continue-on-error: true
         with:
-          image: localhost:5000/nginx/nginx-prometheus-exporter:edge
+          image: localhost:5000/nginx/nginx-prometheus-exporter:${{ steps.meta.outputs.version }}
           only-fixed: true
           add-cpes-if-none: true
-        if: github.event_name != 'pull_request'
 
       - name: Upload scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
+        uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3.30.6
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-        if: github.event_name != 'pull_request'
 
       - name: Clean up NETRC
         run: |
@@ -258,7 +276,7 @@ jobs:
         if: ${{ always() }}
 
   generate-assertion-doc:
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ !contains(inputs.skip_jobs, 'generate-assertion-doc') }}
     name: Assertion Doc ${{ matrix.prometheus.arch }}
     needs: [build-docker, variables]
     runs-on: ubuntu-24.04-amd64
@@ -277,6 +295,13 @@ jobs:
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
+
+      - name: Configure pipeline Variables
+        id: vars
+        run: |
+          timestamp=$(date --iso-8601=seconds)
+          echo "timestamp=${timestamp}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
 
       - name: Setup netrc
         run: |
@@ -297,7 +322,7 @@ jobs:
       - name: List packages in Go binary
         id: godeps
         env:
-          GOPROXY: ${{ needs.variables.outputs.go_proxy }}
+          GOPROXY: ${{ secrets.ARTIFACTORY_ENDPOINT }}
         run: |
           go version -m ${{ matrix.prometheus.path }} > go_version_out_${{ github.run_id }}_${{ github.run_number }}.txt
           echo "go_version_out=$(find -type f -name "go_version_out*.txt" | head -n 1)" >> $GITHUB_OUTPUT
@@ -313,8 +338,8 @@ jobs:
           build-type: "github.com"
           builder-id: "github"
           builder-version: v0.1.0
-          started-on: ${{ github.event.head_commit.timestamp }}
-          finished-on: ${{ github.event.head_commit.timestamp }}
+          started-on: ${{ steps.vars.outputs.timestamp }}
+          finished-on: ${{ steps.vars.outputs.timestamp }}
           invocation-id: ${{ github.run_id }}.${{ github.run_number }}.${{ github.run_attempt }}
           artifactory-user: ${{ secrets.ARTIFACTORY_USER }}
           artifactory-api-token: ${{ secrets.ARTIFACTORY_TOKEN }}
