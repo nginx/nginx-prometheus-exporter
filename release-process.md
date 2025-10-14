@@ -38,6 +38,7 @@ the [Issue Lifecycle](/ISSUE_LIFECYCLE.md) document for information on issue cre
    ```
 
    You can optionally use the following inputs:
+
    ```
    inputs.dry_run # Run the release but don't push or publish any artifacts.
    inputs.goreleaser_args # Any additional `goreleaser` args you want to pass.

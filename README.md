@@ -53,7 +53,6 @@ NGINX Prometheus exporter makes it possible to monitor NGINX or NGINX Plus using
   - [Docker images](#docker-images)
   - [Binaries](#binaries)
   - [Homebrew](#homebrew)
-  - [Snap](#snap)
   - [Scoop](#scoop)
   - [Nix](#nix)
 - [Building the Exporter](#building-the-exporter)
