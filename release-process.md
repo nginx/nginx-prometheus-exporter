@@ -31,7 +31,7 @@ the [Issue Lifecycle](/ISSUE_LIFECYCLE.md) document for information on issue cre
    to ensure that everything is in order.
 4. Create a PR to update the version in the `Makefile` and [README](README.md) to the new version, and any other necessary
    changes.
-5. Once the PR is merged, run the release workflow called `Release NGINX Prometheus Exporter` with the new version for the 
+5. Once the PR is merged, run the release workflow called `Release NGINX Prometheus Exporter` with the new version for the
    `version` input:
 
    ```text
@@ -39,6 +39,7 @@ the [Issue Lifecycle](/ISSUE_LIFECYCLE.md) document for information on issue cre
    ```
 
    You can optionally use the following inputs:
+
    ```text
    inputs.dry_run # Run the release but don't push or publish any artifacts.
    inputs.goreleaser_args # Any additional `goreleaser` args you want to pass.
