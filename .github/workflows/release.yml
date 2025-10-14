@@ -99,7 +99,7 @@ jobs:
       GOPROXY: ${{ secrets.ARTIFACTORY_ENDPOINT }}
     outputs:
       binaries: ${{ steps.prom_binaries.outputs.json }}
-    needs: [variables]
+    needs: [variables, tag]
     services:
       registry:
         image: registry:3
