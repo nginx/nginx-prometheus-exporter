@@ -66,8 +66,8 @@ jobs:
 
       - name: Create new release Tag
         run: |
-          git config --global user.email "kubernetes@nginx.com"
-          git config --global user.name "NGINX Kubernetes Team"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git config --global user.name "${{ github.actor }}"
           tag="v${{ needs.variables.outputs.tag }}"
           if ! git rev-parse --verify refs/tags/${tag} 2>/dev/null; then
             echo "Adding tag ${tag}."
