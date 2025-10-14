@@ -49,7 +49,7 @@ jobs:
 
       - name: Get version
         id: vars
-        run: echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        run: echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
 
   tag:
     if: ${{ !contains(inputs.skip_jobs, 'tag') }}
@@ -73,7 +73,7 @@ jobs:
             echo "Adding tag ${tag}."
             git tag -a ${tag} -m "Version ${tag#v*}"
             echo "Pushing tag ${tag} to main branch"
-            if ! ${{ inputs.dry_run }}; then
+            if ${{ !inputs.dry_run }}; then
               git push origin "${tag}"
             else
               echo "DRY RUN not making any changes"
@@ -187,7 +187,7 @@ jobs:
         with:
           minor-label: "enhancement"
           major-label: "change"
-          publish: ${{ !github.event.inputs.dry_run }}
+          publish: ${{ !inputs.dry_run }}
           collapse-after: 30
           notes-footer: |
             ## Upgrade
@@ -216,7 +216,7 @@ jobs:
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           version: v2.12.5 # renovate: datasource=github-tags depName=goreleaser/goreleaser
-          args: ${{ github.event.inputs.dry_run && 'build --snapshot' || 'release' }} --clean ${{ github.event.inputs.goreleaser_args }}
+          args: ${{ inputs.dry_run && 'build --snapshot' || 'release' }} --clean ${{ inputs.goreleaser_args }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NGINX_GITHUB_TOKEN: ${{ secrets.NGINX_PAT }}
@@ -248,7 +248,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          push: ${{ !github.event.inputs.dry_run }}
+          push: ${{ !inputs.dry_run }}
           cache-from: type=gha,scope=exporter
           cache-to: type=gha,scope=exporter,mode=max
           no-cache: true
@@ -263,14 +263,14 @@ jobs:
           image: localhost:5000/nginx/nginx-prometheus-exporter:${{ steps.meta.outputs.version }}
           only-fixed: true
           add-cpes-if-none: true
-        if: ${{ !github.event.inputs.dry_run }}
+        if: ${{ !inputs.dry_run }}
 
       - name: Upload scan result to GitHub Security tab
         uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3.30.6
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-        if: ${{ !github.event.inputs.dry_run }}
+        if: ${{ !inputs.dry_run }}
 
       - name: Clean up NETRC
         run: |
