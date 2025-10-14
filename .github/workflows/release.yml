@@ -1,7 +1,6 @@
 name: Release NGINX Prometheus Exporter
 run-name: ${{ inputs.dry_run && '[DRY RUN] ' || '' }}Release NGINX Prometheus Exporter ${{ inputs.version }} from ${{ inputs.branch }} by @${{ github.actor }}
 
-
 on:
   workflow_dispatch:
     inputs:
