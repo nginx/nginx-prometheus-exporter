@@ -263,14 +263,14 @@ jobs:
           image: localhost:5000/nginx/nginx-prometheus-exporter:${{ steps.meta.outputs.version }}
           only-fixed: true
           add-cpes-if-none: true
-        if : ${{ !github.event.inputs.dry_run }}
+        if: ${{ !github.event.inputs.dry_run }}
 
       - name: Upload scan result to GitHub Security tab
         uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3.30.6
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-        if : ${{ !github.event.inputs.dry_run }}
+        if: ${{ !github.event.inputs.dry_run }}
 
       - name: Clean up NETRC
         run: |
