@@ -11,6 +11,11 @@ on:
         required: false
         default: false
         type: boolean
+      branch:
+        description: 'Branch to release from (not normally needed)'
+        required: false
+        default: 'main'
+        type: string
       goreleaser_args:
         description: 'Additional GoReleaser args'
         required: false
