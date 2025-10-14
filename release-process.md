@@ -43,6 +43,7 @@ the [Issue Lifecycle](/ISSUE_LIFECYCLE.md) document for information on issue cre
    inputs.dry_run # Run the release but don't push or publish any artifacts.
    inputs.goreleaser_args # Any additional `goreleaser` args you want to pass.
    inputs.skip_jobs # Comma separated list of jobs to be skipped, useful for reruns.
+   inputs.branch # Branch to release from (e.g., when re-running a previous release)
    ```
 
    As a result, the CI/CD pipeline will:
