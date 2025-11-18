@@ -78,13 +78,14 @@ func (c *NginxCollector) handleScrapeError(ch chan<- prometheus.Metric, err erro
 	errorMsg := err.Error()
 	var errorType string
 
-	if isNetworkError(errorMsg) {
+	switch {
+	case isNetworkError(errorMsg):
 		c.upMetric.Set(nginxDown)
 		errorType = "network"
-	} else if isHTTPError(errorMsg) {
+	case isHTTPError(errorMsg):
 		c.upMetric.Set(nginxUp)
 		errorType = "http"
-	} else {
+	default:
 		c.upMetric.Set(nginxUp)
 		errorType = "parse"
 	}

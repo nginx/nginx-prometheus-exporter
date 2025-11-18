@@ -8,6 +8,8 @@ import (
 )
 
 func TestIsNetworkError(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		errorMsg string
@@ -37,6 +39,7 @@ func TestIsNetworkError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := isNetworkError(tt.errorMsg); got != tt.want {
 				t.Errorf("isNetworkError() = %v, want %v", got, tt.want)
 			}
@@ -45,6 +48,8 @@ func TestIsNetworkError(t *testing.T) {
 }
 
 func TestIsHTTPError(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		errorMsg string
@@ -74,6 +79,7 @@ func TestIsHTTPError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := isHTTPError(tt.errorMsg); got != tt.want {
 				t.Errorf("isHTTPError() = %v, want %v", got, tt.want)
 			}
@@ -82,6 +88,8 @@ func TestIsHTTPError(t *testing.T) {
 }
 
 func TestNewScrapeSuccessMetric(t *testing.T) {
+	t.Parallel()
+
 	metric := newScrapeSuccessMetric("nginx", map[string]string{"job": "nginx"})
 
 	if metric == nil {
@@ -95,6 +103,8 @@ func TestNewScrapeSuccessMetric(t *testing.T) {
 }
 
 func TestNewScrapeDurationMetric(t *testing.T) {
+	t.Parallel()
+
 	metric := newScrapeDurationMetric("nginx", map[string]string{"job": "nginx"})
 
 	if metric == nil {
@@ -108,10 +118,13 @@ func TestNewScrapeDurationMetric(t *testing.T) {
 }
 
 func TestNewScrapeErrorsTotalMetric(t *testing.T) {
+	t.Parallel()
+
 	metric := newScrapeErrorsTotalMetric("nginx", map[string]string{"job": "nginx"})
 
 	if metric == nil {
 		t.Error("newScrapeErrorsTotalMetric() returned nil")
+		return
 	}
 
 	ch := make(chan *prometheus.Desc, 10)
