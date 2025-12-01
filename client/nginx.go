@@ -93,3 +93,7 @@ func parseStubStats(r io.Reader) (*StubStats, error) {
 	}
 	return &s, nil
 }
+
+func (client *NginxClient) GetAPIEndpoint() string {
+	return client.apiEndpoint
+}
