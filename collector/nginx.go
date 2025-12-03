@@ -54,7 +54,7 @@ func (c *NginxCollector) Collect(ch chan<- prometheus.Metric) {
 	if err != nil {
 		c.upMetric.Set(nginxDown)
 		ch <- c.upMetric
-		c.logger.Error("error getting stats", "error", err.Error())
+		c.logger.Error("error getting stats", "uri", c.nginxClient.GetAPIEndpoint(), "error", err)
 		return
 	}
 

@@ -150,7 +150,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: |
             name=nginx/nginx-prometheus-exporter,enable=${{ github.event_name != 'pull_request' }}
@@ -167,7 +167,7 @@ jobs:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
 
       - name: Create/Update Draft
-        uses: lucacome/draft-release@fd099feb33710d1fa27b915a08a7acd6a1fb7fd2 # v2.0.0
+        uses: lucacome/draft-release@0ebb400b90474a1b791602046abf8394e9f5402d # v2.0.2
         with:
           minor-label: "enhancement"
           major-label: "change"
@@ -188,7 +188,7 @@ jobs:
 
 
       - name: Download Syft
-        uses: anchore/sbom-action/download-syft@f8bdd1d8ac5e901a77a92f111440fdb1b593736b # v0.20.6
+        uses: anchore/sbom-action/download-syft@fbfd9c6c189226748411491745178e0c2017392d # v0.20.10
         if: github.event_name != 'pull_request'
 
       - name: Run GoReleaser
@@ -235,7 +235,7 @@ jobs:
           sbom: true
 
       - name: Scan image
-        uses: anchore/scan-action@f6601287cdb1efc985d6b765bbf99cb4c0ac29d8 # v7.0.0
+        uses: anchore/scan-action@568b89d27fc18c60e56937bff480c91c772cd993 # v7.1.0
         id: scan
         continue-on-error: true
         with:
@@ -245,7 +245,7 @@ jobs:
         if: github.event_name != 'pull_request'
 
       - name: Upload scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@f443b600d91635bebf5b0d9ebc620189c0d6fba5 # v4.30.8
+        uses: github/codeql-action/upload-sarif@fe4161a26a8629af62121b670040955b330f9af2 # v4.31.6
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
