@@ -188,7 +188,7 @@ jobs:
 
 
       - name: Download Syft
-        uses: anchore/sbom-action/download-syft@f8bdd1d8ac5e901a77a92f111440fdb1b593736b # v0.20.6
+        uses: anchore/sbom-action/download-syft@fbfd9c6c189226748411491745178e0c2017392d # v0.20.10
         if: github.event_name != 'pull_request'
 
       - name: Run GoReleaser
@@ -245,7 +245,7 @@ jobs:
         if: github.event_name != 'pull_request'
 
       - name: Upload scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@4e94bd11f71e507f7f87df81788dff88d1dacbfb # v4.31.0
+        uses: github/codeql-action/upload-sarif@fe4161a26a8629af62121b670040955b330f9af2 # v4.31.6
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
