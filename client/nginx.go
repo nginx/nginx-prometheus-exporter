@@ -18,6 +18,7 @@ Reading: %d Writing: %d Waiting: %d
 type NginxClient struct {
 	httpClient  *http.Client
 	apiEndpoint string
+	hostHeader  string
 }
 
 // StubStats represents NGINX stub_status metrics.
@@ -37,10 +38,11 @@ type StubConnections struct {
 }
 
 // NewNginxClient creates an NginxClient.
-func NewNginxClient(httpClient *http.Client, apiEndpoint string) *NginxClient {
+func NewNginxClient(httpClient *http.Client, apiEndpoint string, hostHeader string) *NginxClient {
 	client := &NginxClient{
 		apiEndpoint: apiEndpoint,
 		httpClient:  httpClient,
+		hostHeader:  hostHeader,
 	}
 
 	return client
@@ -55,6 +57,11 @@ func (client *NginxClient) GetStubStats() (*StubStats, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a get request: %w", err)
 	}
+
+	if len(client.hostHeader) > 0 {
+		req.Host = client.hostHeader
+	}
+
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get %v: %w", client.apiEndpoint, err)
