@@ -26,12 +26,12 @@ repos:
       - id: fix-byte-order-marker
 
   - repo: https://github.com/golangci/golangci-lint
-    rev: v2.5.0
+    rev: v2.7.2
     hooks:
       - id: golangci-lint-full
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.28.0
+    rev: v8.30.0
     hooks:
       - id: gitleaks
 
