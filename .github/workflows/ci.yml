@@ -245,7 +245,7 @@ jobs:
         if: github.event_name != 'pull_request'
 
       - name: Upload scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@fe4161a26a8629af62121b670040955b330f9af2 # v4.31.6
+        uses: github/codeql-action/upload-sarif@1b168cd39490f61582a9beae412bb7057a6b2c4e # v4.31.8
         continue-on-error: true
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
