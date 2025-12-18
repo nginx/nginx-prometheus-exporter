@@ -67,7 +67,7 @@ NGINX Prometheus exporter makes it possible to monitor NGINX or NGINX Plus using
 - [Contacts](#contacts)
 - [Contributing](#contributing)
 - [Support](#support)
-- [License](#license)
+- [License](#license-1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
