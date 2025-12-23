@@ -188,7 +188,7 @@ jobs:
 
 
       - name: Download Syft
-        uses: anchore/sbom-action/download-syft@fbfd9c6c189226748411491745178e0c2017392d # v0.20.10
+        uses: anchore/sbom-action/download-syft@a930d0ac434e3182448fe678398ba5713717112a # v0.21.0
         if: github.event_name != 'pull_request'
 
       - name: Run GoReleaser
