@@ -84,21 +84,28 @@ var (
 	constLabels = map[string]string{}
 
 	// Command-line flags.
-	webConfig     = kingpinflag.AddFlags(kingpin.CommandLine, ":9113")
-	metricsPath   = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").Envar("TELEMETRY_PATH").String()
-	nginxPlus     = kingpin.Flag("nginx.plus", "Start the exporter for NGINX Plus. By default, the exporter is started for NGINX.").Default("false").Envar("NGINX_PLUS").Bool()
-	scrapeURIs    = kingpin.Flag("nginx.scrape-uri", "A URI or unix domain socket path for scraping NGINX or NGINX Plus metrics. For NGINX, the stub_status page must be available through the URI. For NGINX Plus -- the API. Repeatable for multiple URIs.").Default("http://127.0.0.1:8080/stub_status").Envar("SCRAPE_URI").HintOptions("http://127.0.0.1:8080/stub_status", "http://127.0.0.1:8080/api").Strings()
-	sslVerify     = kingpin.Flag("nginx.ssl-verify", "Perform SSL certificate verification.").Default("false").Envar("SSL_VERIFY").Bool()
-	sslCaCert     = kingpin.Flag("nginx.ssl-ca-cert", "Path to the PEM encoded CA certificate file used to validate the servers SSL certificate.").Default("").Envar("SSL_CA_CERT").String()
-	sslClientCert = kingpin.Flag("nginx.ssl-client-cert", "Path to the PEM encoded client certificate file to use when connecting to the server.").Default("").Envar("SSL_CLIENT_CERT").String()
-	sslClientKey  = kingpin.Flag("nginx.ssl-client-key", "Path to the PEM encoded client certificate key file to use when connecting to the server.").Default("").Envar("SSL_CLIENT_KEY").String()
-	useProxyProto = kingpin.Flag("nginx.proxy-protocol", "Pass proxy protocol payload to nginx listeners.").Default("false").Envar("PROXY_PROTOCOL").Bool()
+	webConfig        = kingpinflag.AddFlags(kingpin.CommandLine, ":9113")
+	metricsPath      = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").Envar("TELEMETRY_PATH").String()
+	nginxMetricsOnly = kingpin.Flag("web.nginx-metrics-only", "Expose only NGINX metrics (no Go runtime, build info, or promhttp metrics).").Default("false").Envar("NGINX_METRICS_ONLY").Bool()
+	nginxPlus        = kingpin.Flag("nginx.plus", "Start the exporter for NGINX Plus. By default, the exporter is started for NGINX.").Default("false").Envar("NGINX_PLUS").Bool()
+	scrapeURIs       = kingpin.Flag("nginx.scrape-uri", "A URI or unix domain socket path for scraping NGINX or NGINX Plus metrics. For NGINX, the stub_status page must be available through the URI. For NGINX Plus -- the API. Repeatable for multiple URIs.").Default("http://127.0.0.1:8080/stub_status").Envar("SCRAPE_URI").HintOptions("http://127.0.0.1:8080/stub_status", "http://127.0.0.1:8080/api").Strings()
+	sslVerify        = kingpin.Flag("nginx.ssl-verify", "Perform SSL certificate verification.").Default("false").Envar("SSL_VERIFY").Bool()
+	sslCaCert        = kingpin.Flag("nginx.ssl-ca-cert", "Path to the PEM encoded CA certificate file used to validate the servers SSL certificate.").Default("").Envar("SSL_CA_CERT").String()
+	sslClientCert    = kingpin.Flag("nginx.ssl-client-cert", "Path to the PEM encoded client certificate file to use when connecting to the server.").Default("").Envar("SSL_CLIENT_CERT").String()
+	sslClientKey     = kingpin.Flag("nginx.ssl-client-key", "Path to the PEM encoded client certificate key file to use when connecting to the server.").Default("").Envar("SSL_CLIENT_KEY").String()
+	useProxyProto    = kingpin.Flag("nginx.proxy-protocol", "Pass proxy protocol payload to nginx listeners.").Default("false").Envar("PROXY_PROTOCOL").Bool()
 
 	// Custom command-line flags.
 	timeout = createPositiveDurationFlag(kingpin.Flag("nginx.timeout", "A timeout for scraping metrics from NGINX or NGINX Plus.").Default("5s").Envar("TIMEOUT").HintOptions("5s", "10s", "30s", "1m", "5m"))
 )
 
 const exporterName = "nginx_exporter"
+
+func mustRegister(registerer prometheus.Registerer, c prometheus.Collector) {
+	if err := registerer.Register(c); err != nil {
+		panic(err)
+	}
+}
 
 func main() {
 	kingpin.Flag("prometheus.const-label", "Label that will be used in every metric. Format is label=value. It can be repeated multiple times.").Envar("CONST_LABELS").StringMapVar(&constLabels)
@@ -126,7 +133,15 @@ func main() {
 	logger.Info("nginx-prometheus-exporter", "version", common_version.Info())
 	logger.Info("build context", "build_context", common_version.BuildContext())
 
-	prometheus.MustRegister(version.NewCollector(exporterName))
+	registerer := prometheus.DefaultRegisterer
+	gatherer := prometheus.DefaultGatherer
+	if *nginxMetricsOnly {
+		registry := prometheus.NewRegistry()
+		registerer = registry
+		gatherer = registry
+	} else {
+		mustRegister(registerer, version.NewCollector(exporterName))
+	}
 
 	if len(*scrapeURIs) == 0 {
 		logger.Error("no scrape addresses provided")
@@ -164,18 +179,22 @@ func main() {
 	}
 
 	if len(*scrapeURIs) == 1 {
-		registerCollector(logger, transport, (*scrapeURIs)[0], constLabels)
+		registerCollector(registerer, logger, transport, (*scrapeURIs)[0], constLabels)
 	} else {
 		for _, addr := range *scrapeURIs {
 			// add scrape URI to const labels
 			labels := maps.Clone(constLabels)
 			labels["addr"] = addr
 
-			registerCollector(logger, transport, addr, labels)
+			registerCollector(registerer, logger, transport, addr, labels)
 		}
 	}
 
-	http.Handle(*metricsPath, promhttp.Handler())
+	if *nginxMetricsOnly {
+		http.Handle(*metricsPath, promhttp.HandlerFor(gatherer, promhttp.HandlerOpts{}))
+	} else {
+		http.Handle(*metricsPath, promhttp.Handler())
+	}
 
 	if *metricsPath != "/" && *metricsPath != "" {
 		landingConfig := web.LandingConfig{
@@ -223,7 +242,7 @@ func main() {
 	_ = srv.Shutdown(srvCtx)
 }
 
-func registerCollector(logger *slog.Logger, transport *http.Transport,
+func registerCollector(registerer prometheus.Registerer, logger *slog.Logger, transport *http.Transport,
 	addr string, labels map[string]string,
 ) {
 	var socketPath string
@@ -307,10 +326,10 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 			os.Exit(1)
 		}
 		variableLabelNames := collector.NewVariableLabelNames(nil, nil, nil, nil, nil, nil, nil)
-		prometheus.MustRegister(collector.NewNginxPlusCollector(plusClient, "nginxplus", variableLabelNames, labels, logger))
+		mustRegister(registerer, collector.NewNginxPlusCollector(plusClient, "nginxplus", variableLabelNames, labels, logger))
 	} else {
 		ossClient := client.NewNginxClient(httpClient, addr)
-		prometheus.MustRegister(collector.NewNginxCollector(ossClient, "nginx", labels, logger))
+		mustRegister(registerer, collector.NewNginxCollector(ossClient, "nginx", labels, logger))
 	}
 }
 
