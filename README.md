@@ -435,12 +435,12 @@ Flags:
 
 #### [License](https://nginx.org/en/docs/http/ngx_http_api_module.html#def_nginx_license_object)
 
-| Name                                                | Type  | Description                                                                                                      | Labels |
-| --------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------- | ------ |
-| `nginxplus_license_expiration_timestamp_seconds`   | Gauge | License expiration date (expressed as Unix Epoch Time)                                                            | []     |
-| `nginxplus_license_reporting_fails_count`          | Gauge | Number of failed reporting attempts, reset each time the usage report is successfully sent                        | []     |
-| `nginxplus_license_reporting_grace_period_seconds` | Gauge | Number of seconds before traffic processing is stopped after unsuccessful report attempt                          | []     |
-| `nginxplus_license_reporting_healthy`              | Gauge | Indicates whether the reporting state is still considered healthy despite recent failed attempts                  | []     |
+| Name                                               | Type  | Description                                                                                      | Labels |
+| -------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------ | ------ |
+| `nginxplus_license_expiration_timestamp_seconds`   | Gauge | License expiration date (expressed as Unix Epoch Time)                                           | []     |
+| `nginxplus_license_reporting_fails_count`          | Gauge | Number of failed reporting attempts, reset each time the usage report is successfully sent       | []     |
+| `nginxplus_license_reporting_grace_period_seconds` | Gauge | Number of seconds before traffic processing is stopped after unsuccessful report attempt         | []     |
+| `nginxplus_license_reporting_healthy`              | Gauge | Indicates whether the reporting state is still considered healthy despite recent failed attempts | []     |
 
 Connect to the `/metrics` page of the running exporter to see the complete list of metrics along with their
 descriptions. Note: to see server zones related metrics you must configure [status
