@@ -169,6 +169,8 @@ Flags:
       --web.listen-address=:9113 ...
                                  Addresses on which to expose metrics and web interface. Repeatable for multiple addresses. ($LISTEN_ADDRESS)
       --web.config.file=""       Path to configuration file that can enable TLS or authentication. See: https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md ($CONFIG_FILE)
+      --[no-]web.nginx-metrics-only
+                                 Expose only NGINX metrics (no Go runtime, build info, or promhttp metrics). ($NGINX_METRICS_ONLY)
       --web.telemetry-path="/metrics"
                                  Path under which to expose metrics. ($TELEMETRY_PATH)
       --[no-]nginx.plus          Start the exporter for NGINX Plus. By default, the exporter is started for NGINX. ($NGINX_PLUS)
@@ -198,7 +200,9 @@ Flags:
 | `nginx_exporter_build_info`                  | Gauge    | Shows the exporter build information.        | `branch`, `goarch`, `goos`, `goversion`, `revision`, `tags` and `version` |
 | `promhttp_metric_handler_requests_total`     | Counter  | Total number of scrapes by HTTP status code. | `code` (the HTTP status code)                                             |
 | `promhttp_metric_handler_requests_in_flight` | Gauge    | Current number of scrapes being served.      | []                                                                        |
-| `go_*`                                       | Multiple | Go runtime metrics.                          | []                                                                        |
+| `go_*`                                       | Multiple | Go runtime metrics (disabled with `--web.nginx-metrics-only`). | []                                                                        |
+
+When `--web.nginx-metrics-only` is set, only NGINX metrics are exposed (no Go runtime, build info, or promhttp metrics).
 
 ### Metrics for NGINX OSS
 
