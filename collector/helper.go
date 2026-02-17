@@ -1,8 +1,13 @@
 package collector
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+// nowFunc overloadable for package level testing
+var nowFunc = time.Now
 
 const (
 	nginxUp   = 1
@@ -35,3 +40,11 @@ func MergeLabels(a map[string]string, b map[string]string) map[string]string {
 
 	return c
 }
+
+type CTSource byte
+
+const (
+	CTSourceNone CTSource = iota
+	CTSourceProcess
+	CTSourceStats
+)

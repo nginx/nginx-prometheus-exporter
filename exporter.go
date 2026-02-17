@@ -94,6 +94,9 @@ var (
 	sslClientKey  = kingpin.Flag("nginx.ssl-client-key", "Path to the PEM encoded client certificate key file to use when connecting to the server.").Default("").Envar("SSL_CLIENT_KEY").String()
 	useProxyProto = kingpin.Flag("nginx.proxy-protocol", "Pass proxy protocol payload to nginx listeners.").Default("false").Envar("PROXY_PROTOCOL").Bool()
 
+	// Prometheus format flags.
+	createdTimeSource = kingpin.Flag("prometheus.created-time-source", "Source for created timestamps on counter metrics: none, process, stats (stats is only valid with --nginx.plus).").Default("none").Envar("CREATED_TIME_SOURCE").Enum("none", "process", "stats")
+
 	// Custom command-line flags.
 	timeout = createPositiveDurationFlag(kingpin.Flag("nginx.timeout", "A timeout for scraping metrics from NGINX or NGINX Plus.").Default("5s").Envar("TIMEOUT").HintOptions("5s", "10s", "30s", "1m", "5m"))
 )
@@ -163,15 +166,26 @@ func main() {
 		TLSClientConfig: sslConfig,
 	}
 
+	if !*nginxPlus && *createdTimeSource == "stats" {
+		logger.Error("created-time-source=stats is only valid with --nginx.plus")
+		os.Exit(1)
+	}
+	var ctSource collector.CTSource
+	if *createdTimeSource == "process" {
+		ctSource = collector.CTSourceProcess
+	} else if *createdTimeSource == "stats" {
+		ctSource = collector.CTSourceStats
+	}
+
 	if len(*scrapeURIs) == 1 {
-		registerCollector(logger, transport, (*scrapeURIs)[0], constLabels)
+		registerCollector(logger, transport, (*scrapeURIs)[0], constLabels, ctSource)
 	} else {
 		for _, addr := range *scrapeURIs {
 			// add scrape URI to const labels
 			labels := maps.Clone(constLabels)
 			labels["addr"] = addr
 
-			registerCollector(logger, transport, addr, labels)
+			registerCollector(logger, transport, addr, labels, ctSource)
 		}
 	}
 
@@ -224,7 +238,7 @@ func main() {
 }
 
 func registerCollector(logger *slog.Logger, transport *http.Transport,
-	addr string, labels map[string]string,
+	addr string, labels map[string]string, ctSource collector.CTSource,
 ) {
 	var socketPath string
 
@@ -307,10 +321,10 @@ func registerCollector(logger *slog.Logger, transport *http.Transport,
 			os.Exit(1)
 		}
 		variableLabelNames := collector.NewVariableLabelNames(nil, nil, nil, nil, nil, nil, nil)
-		prometheus.MustRegister(collector.NewNginxPlusCollector(plusClient, "nginxplus", variableLabelNames, labels, logger))
+		prometheus.MustRegister(collector.NewNginxPlusCollector(plusClient, "nginxplus", variableLabelNames, labels, logger, ctSource))
 	} else {
 		ossClient := client.NewNginxClient(httpClient, addr)
-		prometheus.MustRegister(collector.NewNginxCollector(ossClient, "nginx", labels, logger))
+		prometheus.MustRegister(collector.NewNginxCollector(ossClient, "nginx", labels, logger, ctSource))
 	}
 }
 
