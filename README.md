@@ -1,7 +1,6 @@
 <!-- markdownlint-disable-next-line first-line-h1 -->
 [![OpenSSFScorecard](https://api.securityscorecards.dev/projects/github.com/nginx/nginx-prometheus-exporter/badge)](https://scorecard.dev/viewer/?uri=github.com/nginx/nginx-prometheus-exporter)
 [![CI](https://github.com/nginx/nginx-prometheus-exporter/actions/workflows/ci.yml/badge.svg)](https://github.com/nginx/nginx-prometheus-exporter/actions/workflows/ci.yml)
-[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B5618%2Fgithub.com%2Fnginx%2Fnginx-prometheus-exporter.svg?type=shield)](https://app.fossa.com/projects/custom%2B5618%2Fgithub.com%2Fnginx%2Fnginx-prometheus-exporter?ref=badge_shield)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nginx/nginx-prometheus-exporter)](https://goreportcard.com/report/github.com/nginx/nginx-prometheus-exporter)
 [![codecov](https://codecov.io/gh/nginx/nginx-prometheus-exporter/graph/badge.svg?token=J6Oz10LWy3)](https://codecov.io/gh/nginx/nginx-prometheus-exporter)
 ![GitHub all releases](https://img.shields.io/github/downloads/nginx/nginx-prometheus-exporter/total?logo=github)
