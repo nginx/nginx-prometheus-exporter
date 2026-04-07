@@ -3,6 +3,7 @@ package collector
 import (
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/nginx/nginx-prometheus-exporter/client"
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,11 +16,12 @@ type NginxCollector struct {
 	nginxClient *client.NginxClient
 	metrics     map[string]*prometheus.Desc
 	mutex       sync.Mutex
+	createdAt   time.Time
 }
 
 // NewNginxCollector creates an NginxCollector.
-func NewNginxCollector(nginxClient *client.NginxClient, namespace string, constLabels map[string]string, logger *slog.Logger) *NginxCollector {
-	return &NginxCollector{
+func NewNginxCollector(nginxClient *client.NginxClient, namespace string, constLabels map[string]string, logger *slog.Logger, ctSource CTSource) *NginxCollector {
+	c := &NginxCollector{
 		nginxClient: nginxClient,
 		logger:      logger,
 		metrics: map[string]*prometheus.Desc{
@@ -33,6 +35,10 @@ func NewNginxCollector(nginxClient *client.NginxClient, namespace string, constL
 		},
 		upMetric: newUpMetric(namespace, constLabels),
 	}
+	if ctSource == CTSourceProcess {
+		c.createdAt = nowFunc()
+	}
+	return c
 }
 
 // Describe sends the super-set of all possible descriptors of NGINX metrics
@@ -42,6 +48,18 @@ func (c *NginxCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	for _, m := range c.metrics {
 		ch <- m
+	}
+}
+
+func (c *NginxCollector) newGaugeMetric(ch chan<- prometheus.Metric, desc *prometheus.Desc, value float64, labelValues ...string) {
+	ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, value, labelValues...)
+}
+
+func (c *NginxCollector) newCounterMetric(ch chan<- prometheus.Metric, desc *prometheus.Desc, value float64, labelValues ...string) {
+	if c.createdAt.IsZero() {
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.CounterValue, value, labelValues...)
+	} else {
+		ch <- prometheus.MustNewConstMetricWithCreatedTimestamp(desc, prometheus.CounterValue, value, c.createdAt, labelValues...)
 	}
 }
 
@@ -61,18 +79,18 @@ func (c *NginxCollector) Collect(ch chan<- prometheus.Metric) {
 	c.upMetric.Set(nginxUp)
 	ch <- c.upMetric
 
-	ch <- prometheus.MustNewConstMetric(c.metrics["connections_active"],
-		prometheus.GaugeValue, float64(stats.Connections.Active))
-	ch <- prometheus.MustNewConstMetric(c.metrics["connections_accepted"],
-		prometheus.CounterValue, float64(stats.Connections.Accepted))
-	ch <- prometheus.MustNewConstMetric(c.metrics["connections_handled"],
-		prometheus.CounterValue, float64(stats.Connections.Handled))
-	ch <- prometheus.MustNewConstMetric(c.metrics["connections_reading"],
-		prometheus.GaugeValue, float64(stats.Connections.Reading))
-	ch <- prometheus.MustNewConstMetric(c.metrics["connections_writing"],
-		prometheus.GaugeValue, float64(stats.Connections.Writing))
-	ch <- prometheus.MustNewConstMetric(c.metrics["connections_waiting"],
-		prometheus.GaugeValue, float64(stats.Connections.Waiting))
-	ch <- prometheus.MustNewConstMetric(c.metrics["http_requests_total"],
-		prometheus.CounterValue, float64(stats.Requests))
+	c.newGaugeMetric(ch, c.metrics["connections_active"],
+		float64(stats.Connections.Active))
+	c.newCounterMetric(ch, c.metrics["connections_accepted"],
+		float64(stats.Connections.Accepted))
+	c.newCounterMetric(ch, c.metrics["connections_handled"],
+		float64(stats.Connections.Handled))
+	c.newGaugeMetric(ch, c.metrics["connections_reading"],
+		float64(stats.Connections.Reading))
+	c.newGaugeMetric(ch, c.metrics["connections_writing"],
+		float64(stats.Connections.Writing))
+	c.newGaugeMetric(ch, c.metrics["connections_waiting"],
+		float64(stats.Connections.Waiting))
+	c.newCounterMetric(ch, c.metrics["http_requests_total"],
+		float64(stats.Requests))
 }

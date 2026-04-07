@@ -183,6 +183,8 @@ Flags:
       --nginx.timeout=5s         A timeout for scraping metrics from NGINX or NGINX Plus. ($TIMEOUT)
       --prometheus.const-label=PROMETHEUS.CONST-LABEL ...
                                  Label that will be used in every metric. Format is label=value. It can be repeated multiple times. ($CONST_LABELS)
+      --prometheus.created-time-source="none"
+                                 Source for created timestamps on counter metrics: none, process, stats (stats is only valid with --nginx.plus). ($CREATED_TIME_SOURCE)
       --log.level=info           Only log messages with the given severity or above. One of: [debug, info, warn, error]
       --log.format=logfmt        Output format of log messages. One of: [logfmt, json]
       --[no-]version             Show application version.
