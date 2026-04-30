@@ -26,7 +26,7 @@ repos:
       - id: fix-byte-order-marker
 
   - repo: https://github.com/golangci/golangci-lint
-    rev: v2.7.2
+    rev: v2.11.4
     hooks:
       - id: golangci-lint-full
 
@@ -36,7 +36,7 @@ repos:
       - id: gitleaks
 
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.18.1
+    rev: v0.22.0
     hooks:
       - id: markdownlint-cli2
 
@@ -46,7 +46,7 @@ repos:
       - id: yamllint
 
   - repo: https://github.com/thlorenz/doctoc
-    rev: v2.2.0
+    rev: v2.4.0
     hooks:
       - id: doctoc
         args: [--update-only, --title, "## Table of Contents"]
