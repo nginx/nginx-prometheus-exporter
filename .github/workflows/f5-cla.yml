@@ -11,7 +11,7 @@ on:
       - reopened
 
 concurrency:
-  group: ${{ github.ref_name }}-cla
+  group: ${{ github.event.pull_request.number || github.event.issue.number }}-cla
 
 permissions:
   contents: read
