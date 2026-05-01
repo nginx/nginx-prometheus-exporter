@@ -208,7 +208,7 @@ jobs:
           echo "json=$(./binary-json.sh ${{ github.workspace }}/dist ${{ github.event.repository.name }} "nginx-prometheus-exporter")" >> $GITHUB_OUTPUT
 
       - name: Store Artifacts in Cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ github.workspace }}/dist
           key: nginx-prometheus-exporter-${{ github.sha }}
