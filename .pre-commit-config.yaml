@@ -46,7 +46,7 @@ repos:
       - id: yamllint
 
   - repo: https://github.com/thlorenz/doctoc
-    rev: v2.4.0
+    rev: v2.4.1
     hooks:
       - id: doctoc
         args: [--update-only, --title, "## Table of Contents"]
