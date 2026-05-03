@@ -223,7 +223,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
+        uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
         with:
           version: v2.15.4 # renovate: datasource=github-tags depName=goreleaser/goreleaser
           args: ${{ inputs.dry_run && 'build --snapshot' || 'release' }} --clean ${{ inputs.goreleaser_args }}
