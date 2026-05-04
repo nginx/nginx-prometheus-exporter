@@ -98,6 +98,10 @@ We assume that you have already installed Prometheus and NGINX or NGINX Plus. Ad
 - Expose the built-in metrics in NGINX/NGINX Plus:
   - For NGINX, expose the [stub_status
     page](https://nginx.org/en/docs/http/ngx_http_stub_status_module.html#stub_status) at `/stub_status` on port `8080`.
+  - Optionally (for NGINX) you can expose the [stub_status page](https://nginx.org/en/docs/http/ngx_http_stub_status_module.html#stub_status)
+    as a socket (e. g. if port 8080/TCP is already being used by another service on your system and you just want to
+    generally circumvent port collisions). Please remember to change `--nginx.scrape-uri=` to `--nginx.scrape-uri=unix:///path/to/socket:with/location`
+    (e.g. `--nginx.scrape-uri=unix:///var/run/nginx_stub_status.sock:localhost/stub_status`). See [examples/prerequisites/README.md](examples/prerequisites/README.md).
   - For NGINX Plus, expose the [API](https://nginx.org/en/docs/http/ngx_http_api_module.html#api) at `/api` on port
     `8080`.
 - Configure Prometheus to scrape metrics from the server with the exporter. Note that the default scrape port of the
@@ -172,7 +176,7 @@ Flags:
                                  Path under which to expose metrics. ($TELEMETRY_PATH)
       --[no-]nginx.plus          Start the exporter for NGINX Plus. By default, the exporter is started for NGINX. ($NGINX_PLUS)
       --nginx.scrape-uri=http://127.0.0.1:8080/stub_status ...
-                                 A URI or unix domain socket path for scraping NGINX or NGINX Plus metrics. For NGINX, the stub_status page must be available through the URI. For NGINX Plus -- the API. Repeatable for multiple URIs. ($SCRAPE_URI)
+                                 A URI or unix domain socket path for scraping NGINX or NGINX Plus metrics. For NGINX, the stub_status page must be available through the URI (examples: http://127.0.0.1:8080/stub_status or unix:///path/to/socket:with/location in case you are using a UNIX socket). For NGINX Plus -- the API. Repeatable for multiple URIs. ($SCRAPE_URI)
       --[no-]nginx.ssl-verify    Perform SSL certificate verification. ($SSL_VERIFY)
       --nginx.ssl-ca-cert=""     Path to the PEM encoded CA certificate file used to validate the servers SSL certificate. ($SSL_CA_CERT)
       --nginx.ssl-client-cert=""
