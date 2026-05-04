@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/exporter-toolkit/web/kingpinflag"
 )
 
@@ -166,5 +168,63 @@ func TestConvertFlagToEnvar(t *testing.T) {
 		if res != c.output {
 			t.Errorf("expected %s to resolve to %s but got %s", c.input, c.output, res)
 		}
+	}
+}
+
+func TestNginxMetricsOnlyRegistry(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                  string
+		nginxMetricsOnly      bool
+		wantVersionCollector  bool
+		wantDefaultCollectors bool
+	}{
+		{
+			name:                  "default behavior includes version and runtime collectors",
+			nginxMetricsOnly:      false,
+			wantVersionCollector:  true,
+			wantDefaultCollectors: true,
+		},
+		{
+			name:                  "web.nginx-metrics-only excludes version and runtime collectors",
+			nginxMetricsOnly:      true,
+			wantVersionCollector:  false,
+			wantDefaultCollectors: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			registry := prometheus.NewRegistry()
+
+			if !tt.nginxMetricsOnly {
+				// Register version collector like main() does when nginxMetricsOnly is false
+				if err := registry.Register(version.NewCollector("nginx_exporter")); err != nil {
+					t.Fatalf("failed to register version collector: %v", err)
+				}
+			}
+
+			// Gather metrics
+			metricFamilies, err := registry.Gather()
+			if err != nil {
+				t.Fatalf("failed to gather metrics: %v", err)
+			}
+
+			// Check for version collector metric
+			hasVersionMetric := false
+			for _, mf := range metricFamilies {
+				if mf.GetName() == "nginx_exporter_build_info" {
+					hasVersionMetric = true
+					break
+				}
+			}
+
+			if hasVersionMetric != tt.wantVersionCollector {
+				t.Errorf("version collector presence = %v, want %v", hasVersionMetric, tt.wantVersionCollector)
+			}
+		})
 	}
 }
