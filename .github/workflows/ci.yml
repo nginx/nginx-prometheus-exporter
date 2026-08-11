@@ -192,7 +192,7 @@ jobs:
         if: github.event_name != 'pull_request'
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           version: v2.15.4 # renovate: datasource=github-tags depName=goreleaser/goreleaser
           args: build --snapshot --clean
