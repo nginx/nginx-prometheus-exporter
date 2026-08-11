@@ -19,6 +19,15 @@ jobs:
       contents: read
       actions: read # for 8398a7/action-slack
     steps:
+      - name: Get secrets from nic vault
+        uses: nginx/ci-self-hosted/.github/actions/get-from-vault@5c3e1f8b51f66a851fdba80f70e19cf966199730
+        with:
+          client-id: "${{ secrets.AZURE_VAULT_CLIENT_ID }}"
+          tenant-id: "${{ secrets.AZURE_VAULT_TENANT_ID }}"
+          vault-name: "nic-vault"
+          secret-names: "slack-pipeline-webhook"
+          env-names: "SLACK_WEBHOOK_URL"
+
       - name: Data
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         continue-on-error: true
@@ -70,5 +79,3 @@ jobs:
                 }]
               }]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
