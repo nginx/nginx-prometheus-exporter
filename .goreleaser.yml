@@ -60,9 +60,10 @@ signs:
   - cmd: cosign
     artifacts: checksum
     output: true
+    signature: "${artifact}.bundle"
     args:
       - sign-blob
-      - "--bundle=${artifact}.bundle"
+      - "--bundle=${signature}"
       - "${artifact}"
       - "--yes"
 
