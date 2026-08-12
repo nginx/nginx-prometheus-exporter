@@ -1290,13 +1290,15 @@ var booleanToFloat64 = map[bool]float64{
 }
 
 func newServerZoneMetric(namespace string, metricName string, docString string, variableLabelNames []string, constLabels prometheus.Labels) *prometheus.Desc {
-	labels := []string{"server_zone"}
+	labels := make([]string, 0, 1+len(variableLabelNames))
+	labels = append(labels, "server_zone")
 	labels = append(labels, variableLabelNames...)
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "server_zone", metricName), docString, labels, constLabels)
 }
 
 func newStreamServerZoneMetric(namespace string, metricName string, docString string, variableLabelNames []string, constLabels prometheus.Labels) *prometheus.Desc {
-	labels := []string{"server_zone"}
+	labels := make([]string, 0, 1+len(variableLabelNames))
+	labels = append(labels, "server_zone")
 	labels = append(labels, variableLabelNames...)
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "stream_server_zone", metricName), docString, labels, constLabels)
 }
@@ -1310,13 +1312,15 @@ func newStreamUpstreamMetric(namespace string, metricName string, docString stri
 }
 
 func newUpstreamServerMetric(namespace string, metricName string, docString string, variableLabelNames []string, constLabels prometheus.Labels) *prometheus.Desc {
-	labels := []string{"upstream", "server"}
+	labels := make([]string, 0, 2+len(variableLabelNames))
+	labels = append(labels, "upstream", "server")
 	labels = append(labels, variableLabelNames...)
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "upstream_server", metricName), docString, labels, constLabels)
 }
 
 func newStreamUpstreamServerMetric(namespace string, metricName string, docString string, variableLabelNames []string, constLabels prometheus.Labels) *prometheus.Desc {
-	labels := []string{"upstream", "server"}
+	labels := make([]string, 0, 2+len(variableLabelNames))
+	labels = append(labels, "upstream", "server")
 	labels = append(labels, variableLabelNames...)
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "stream_upstream_server", metricName), docString, labels, constLabels)
 }
@@ -1350,7 +1354,8 @@ func newStreamLimitConnectionMetric(namespace string, metricName string, docStri
 }
 
 func newCacheZoneMetric(namespace string, metricName string, docString string, variableLabelNames []string, constLabels prometheus.Labels) *prometheus.Desc {
-	labels := []string{"zone"}
+	labels := make([]string, 0, 1+len(variableLabelNames))
+	labels = append(labels, "zone")
 	labels = append(labels, variableLabelNames...)
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "cache", metricName), docString, labels, constLabels)
 }
