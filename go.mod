@@ -36,3 +36,5 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
+
+retract v1.5.2 // Broken release: signing step failed; superseded by v1.5.3.
