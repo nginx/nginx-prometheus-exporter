@@ -3,6 +3,7 @@ package collector
 import (
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/nginx/nginx-prometheus-exporter/client"
 	"github.com/prometheus/client_golang/prometheus"
@@ -10,11 +11,14 @@ import (
 
 // NginxCollector collects NGINX metrics. It implements prometheus.Collector interface.
 type NginxCollector struct {
-	upMetric    prometheus.Gauge
-	logger      *slog.Logger
-	nginxClient *client.NginxClient
-	metrics     map[string]*prometheus.Desc
-	mutex       sync.Mutex
+	upMetric             prometheus.Gauge
+	scrapeSuccessMetric  prometheus.Gauge
+	scrapeDurationMetric prometheus.Gauge
+	scrapeErrorsTotal    *prometheus.CounterVec
+	logger               *slog.Logger
+	nginxClient          *client.NginxClient
+	metrics              map[string]*prometheus.Desc
+	mutex                sync.Mutex
 }
 
 // NewNginxCollector creates an NginxCollector.
@@ -31,7 +35,10 @@ func NewNginxCollector(nginxClient *client.NginxClient, namespace string, constL
 			"connections_waiting":  newGlobalMetric(namespace, "connections_waiting", "Idle client connections", constLabels),
 			"http_requests_total":  newGlobalMetric(namespace, "http_requests_total", "Total http requests", constLabels),
 		},
-		upMetric: newUpMetric(namespace, constLabels),
+		upMetric:             newUpMetric(namespace, constLabels),
+		scrapeSuccessMetric:  newScrapeSuccessMetric(namespace, constLabels),
+		scrapeDurationMetric: newScrapeDurationMetric(namespace, constLabels),
+		scrapeErrorsTotal:    newScrapeErrorsTotalMetric(namespace, constLabels),
 	}
 }
 
@@ -39,6 +46,9 @@ func NewNginxCollector(nginxClient *client.NginxClient, namespace string, constL
 // to the provided channel.
 func (c *NginxCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.upMetric.Desc()
+	ch <- c.scrapeSuccessMetric.Desc()
+	ch <- c.scrapeDurationMetric.Desc()
+	c.scrapeErrorsTotal.Describe(ch)
 
 	for _, m := range c.metrics {
 		ch <- m
@@ -50,16 +60,53 @@ func (c *NginxCollector) Collect(ch chan<- prometheus.Metric) {
 	c.mutex.Lock() // To protect metrics from concurrent collects
 	defer c.mutex.Unlock()
 
+	start := time.Now()
 	stats, err := c.nginxClient.GetStubStats()
+	duration := time.Since(start).Seconds()
+	c.scrapeDurationMetric.Set(duration)
+	ch <- c.scrapeDurationMetric
+
 	if err != nil {
-		c.upMetric.Set(nginxDown)
-		ch <- c.upMetric
-		c.logger.Error("error getting stats", "uri", c.nginxClient.GetAPIEndpoint(), "error", err)
+		c.handleScrapeError(ch, err)
 		return
 	}
 
-	c.upMetric.Set(nginxUp)
+	c.handleScrapeSuccess(ch, stats)
+}
+
+func (c *NginxCollector) handleScrapeError(ch chan<- prometheus.Metric, err error) {
+	errorMsg := err.Error()
+	var errorType string
+
+	switch {
+	case isNetworkError(errorMsg):
+		c.upMetric.Set(nginxDown)
+		errorType = "network"
+	case isHTTPError(errorMsg):
+		c.upMetric.Set(nginxUp)
+		errorType = "http"
+	default:
+		c.upMetric.Set(nginxUp)
+		errorType = "parse"
+	}
+
+	c.scrapeErrorsTotal.WithLabelValues(errorType).Inc()
+	c.scrapeSuccessMetric.Set(0)
+
 	ch <- c.upMetric
+	ch <- c.scrapeSuccessMetric
+	c.scrapeErrorsTotal.Collect(ch)
+
+	c.logger.Error("error getting stats", "error", err.Error(), "type", errorType)
+}
+
+func (c *NginxCollector) handleScrapeSuccess(ch chan<- prometheus.Metric, stats *client.StubStats) {
+	c.upMetric.Set(nginxUp)
+	c.scrapeSuccessMetric.Set(1)
+
+	ch <- c.upMetric
+	ch <- c.scrapeSuccessMetric
+	c.scrapeErrorsTotal.Collect(ch)
 
 	ch <- prometheus.MustNewConstMetric(c.metrics["connections_active"],
 		prometheus.GaugeValue, float64(stats.Connections.Active))
