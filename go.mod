@@ -7,7 +7,7 @@ require (
 	github.com/nginx/nginx-plus-go-client/v3 v3.0.1
 	github.com/pires/go-proxyproto v0.15.0
 	github.com/prometheus/client_golang v1.24.1
-	github.com/prometheus/common v0.70.1
+	github.com/prometheus/common v0.71.0
 	github.com/prometheus/exporter-toolkit v0.17.1
 )
 
@@ -27,14 +27,14 @@ require (
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 )
 
 retract v1.5.2 // Broken release: signing step failed; superseded by v1.5.3.
