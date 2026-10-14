@@ -1,0 +1,4 @@
+self-hosted-runner:
+  labels:
+    - ubuntu-24.04-amd64
+    - ubuntu-26.04-amd64
