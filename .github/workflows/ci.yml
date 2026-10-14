@@ -167,7 +167,7 @@ jobs:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
 
       - name: Create/Update Draft
-        uses: lucacome/draft-release@79e6ec7db3f1de9d330fdc716e45841c99a78196 # v2.2.1
+        uses: lucacome/draft-release@5bc11f2401bad413a67299dcc857b50ff0d80b12 # v2.2.2
         with:
           minor-label: "enhancement"
           major-label: "change"
