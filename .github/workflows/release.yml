@@ -41,7 +41,7 @@ permissions:
 jobs:
   variables:
     name: Setup variables
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       tag: ${{ steps.vars.outputs.tag }}
     steps:
@@ -62,7 +62,7 @@ jobs:
   tag:
     if: ${{ !contains(inputs.skip_jobs, 'tag') }}
     name: Create Tag for release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [variables]
     permissions:
       contents: write
