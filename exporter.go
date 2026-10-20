@@ -226,6 +226,9 @@ func main() {
 func registerCollector(logger *slog.Logger, transport *http.Transport,
 	addr string, labels map[string]string,
 ) {
+	// Clone so each target keeps its own DialContext and connection pool.
+	transport = transport.Clone()
+
 	var socketPath string
 
 	if strings.HasPrefix(addr, "unix:") {
