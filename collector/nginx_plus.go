@@ -840,7 +840,7 @@ func (c *NginxPlusCollector) Collect(ch chan<- prometheus.Metric) {
 
 	for name, upstream := range stats.Upstreams {
 		for _, peer := range upstream.Peers {
-			labelValues := []string{name, peer.Server}
+			labelValues := []string{name, peer.Server, strconv.Itoa(peer.ID)}
 			varLabelValues := c.getUpstreamServerLabelValues(name)
 
 			if c.variableLabelNames.UpstreamServerVariableLabelNames != nil && len(varLabelValues) != len(c.variableLabelNames.UpstreamServerVariableLabelNames) {
@@ -997,7 +997,7 @@ func (c *NginxPlusCollector) Collect(ch chan<- prometheus.Metric) {
 
 	for name, upstream := range stats.StreamUpstreams {
 		for _, peer := range upstream.Peers {
-			labelValues := []string{name, peer.Server}
+			labelValues := []string{name, peer.Server, strconv.Itoa(peer.ID)}
 			varLabelValues := c.getStreamUpstreamServerLabelValues(name)
 
 			if c.variableLabelNames.StreamUpstreamServerVariableLabelNames != nil && len(varLabelValues) != len(c.variableLabelNames.StreamUpstreamServerVariableLabelNames) {
@@ -1312,15 +1312,15 @@ func newStreamUpstreamMetric(namespace string, metricName string, docString stri
 }
 
 func newUpstreamServerMetric(namespace string, metricName string, docString string, variableLabelNames []string, constLabels prometheus.Labels) *prometheus.Desc {
-	labels := make([]string, 0, 2+len(variableLabelNames))
-	labels = append(labels, "upstream", "server")
+	labels := make([]string, 0, 3+len(variableLabelNames))
+	labels = append(labels, "upstream", "server", "id")
 	labels = append(labels, variableLabelNames...)
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "upstream_server", metricName), docString, labels, constLabels)
 }
 
 func newStreamUpstreamServerMetric(namespace string, metricName string, docString string, variableLabelNames []string, constLabels prometheus.Labels) *prometheus.Desc {
-	labels := make([]string, 0, 2+len(variableLabelNames))
-	labels = append(labels, "upstream", "server")
+	labels := make([]string, 0, 3+len(variableLabelNames))
+	labels = append(labels, "upstream", "server", "id")
 	labels = append(labels, variableLabelNames...)
 	return prometheus.NewDesc(prometheus.BuildFQName(namespace, "stream_upstream_server", metricName), docString, labels, constLabels)
 }
