@@ -1,11 +1,11 @@
 module github.com/nginx/nginx-prometheus-exporter
 
-go 1.26.0
+go 1.26.9
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/nginx/nginx-plus-go-client/v3 v3.0.2
-	github.com/pires/go-proxyproto v0.15.0
+	github.com/pires/go-proxyproto v0.16.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/common v0.72.1
 	github.com/prometheus/exporter-toolkit v0.20.0
