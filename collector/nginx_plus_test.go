@@ -19,8 +19,8 @@ func TestNewMetricLabelPrealloc(t *testing.T) {
 	}{
 		{name: "newServerZoneMetric", fn: newServerZoneMetric, wantFixedLabel: []string{"server_zone"}},
 		{name: "newStreamServerZoneMetric", fn: newStreamServerZoneMetric, wantFixedLabel: []string{"server_zone"}},
-		{name: "newUpstreamServerMetric", fn: newUpstreamServerMetric, wantFixedLabel: []string{"upstream", "server"}},
-		{name: "newStreamUpstreamServerMetric", fn: newStreamUpstreamServerMetric, wantFixedLabel: []string{"upstream", "server"}},
+		{name: "newUpstreamServerMetric", fn: newUpstreamServerMetric, wantFixedLabel: []string{"upstream", "server", "id"}},
+		{name: "newStreamUpstreamServerMetric", fn: newStreamUpstreamServerMetric, wantFixedLabel: []string{"upstream", "server", "id"}},
 		{name: "newCacheZoneMetric", fn: newCacheZoneMetric, wantFixedLabel: []string{"zone"}},
 	}
 
