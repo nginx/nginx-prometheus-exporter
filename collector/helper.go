@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -22,6 +24,33 @@ func newUpMetric(namespace string, constLabels map[string]string) prometheus.Gau
 	})
 }
 
+func newScrapeSuccessMetric(namespace string, constLabels map[string]string) prometheus.Gauge {
+	return prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace:   namespace,
+		Name:        "scrape_success",
+		Help:        "Whether the last scrape of NGINX metrics was successful",
+		ConstLabels: constLabels,
+	})
+}
+
+func newScrapeDurationMetric(namespace string, constLabels map[string]string) prometheus.Gauge {
+	return prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace:   namespace,
+		Name:        "scrape_duration_seconds",
+		Help:        "Duration of the last scrape in seconds",
+		ConstLabels: constLabels,
+	})
+}
+
+func newScrapeErrorsTotalMetric(namespace string, constLabels map[string]string) *prometheus.CounterVec {
+	return prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace:   namespace,
+		Name:        "scrape_errors_total",
+		Help:        "Total number of scrape errors by type",
+		ConstLabels: constLabels,
+	}, []string{"type"})
+}
+
 // MergeLabels merges two maps of labels.
 func MergeLabels(a map[string]string, b map[string]string) map[string]string {
 	c := make(map[string]string)
@@ -34,4 +63,15 @@ func MergeLabels(a map[string]string, b map[string]string) map[string]string {
 	}
 
 	return c
+}
+
+func isNetworkError(errorMsg string) bool {
+	return strings.Contains(errorMsg, "failed to get") ||
+		strings.Contains(errorMsg, "connection") ||
+		strings.Contains(errorMsg, "timeout") ||
+		strings.Contains(errorMsg, "refused")
+}
+
+func isHTTPError(errorMsg string) bool {
+	return strings.Contains(errorMsg, "expected 200 response")
 }
