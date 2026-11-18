@@ -1,11 +1,18 @@
 package main
 
 import (
+	"fmt"
+	"log/slog"
+	"net"
+	"net/http"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/exporter-toolkit/web/kingpinflag"
 )
 
@@ -165,6 +172,69 @@ func TestConvertFlagToEnvar(t *testing.T) {
 		res := convertFlagToEnvar(c.input)
 		if res != c.output {
 			t.Errorf("expected %s to resolve to %s but got %s", c.input, c.output, res)
+		}
+	}
+}
+
+func TestRegisterCollectorUnixSocketsAreIndependent(t *testing.T) {
+	t.Parallel()
+
+	// t.TempDir paths can exceed the unix socket path limit on macOS.
+	dir, err := os.MkdirTemp("", "npe")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
+
+	upSocket := filepath.Join(dir, "up.sock")
+	listener, err := (&net.ListenConfig{}).Listen(t.Context(), "unix", upSocket)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			fmt.Fprint(w, "Active connections: 1 \nserver accepts handled requests\n 1 1 1 \nReading: 0 Writing: 1 Waiting: 0 \n")
+		}),
+		ReadHeaderTimeout: time.Second,
+	}
+	go func() { _ = srv.Serve(listener) }()
+	t.Cleanup(func() { srv.Close() })
+
+	upAddr := "unix:" + upSocket + ":/stub_status"
+	downAddr := "unix:" + filepath.Join(dir, "missing.sock") + ":/stub_status"
+
+	transport := &http.Transport{}
+	logger := slog.New(slog.DiscardHandler)
+	for _, addr := range []string{upAddr, downAddr} {
+		registerCollector(logger, transport, addr, map[string]string{"addr": addr})
+	}
+
+	families, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	up := make(map[string]float64)
+	for _, mf := range families {
+		if mf.GetName() != "nginx_up" {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			for _, l := range m.GetLabel() {
+				if l.GetName() == "addr" {
+					up[l.GetValue()] = m.GetGauge().GetValue()
+				}
+			}
+		}
+	}
+
+	for addr, want := range map[string]float64{upAddr: 1, downAddr: 0} {
+		got, ok := up[addr]
+		if !ok {
+			t.Errorf("no nginx_up series for %s", addr)
+			continue
+		}
+		if got != want {
+			t.Errorf("nginx_up for %s = %v, want %v", addr, got, want)
 		}
 	}
 }
